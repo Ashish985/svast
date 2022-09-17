@@ -12,6 +12,7 @@ class Users extends CI_Controller
         Header('Access-Control-Allow-Headers: Origin, Content-Type, Accept, Authorization, X-Request-With');
         //load database
         $this->load->database();
+        $this->load->library('email');
         $this->load->model(array("Users_model"));
         $this->load->library(array("form_validation"));
 
@@ -44,7 +45,7 @@ class Users extends CI_Controller
                 $jwt = new JWT();
                 $JwtSecretKey = "myloginSecret";
                 date_default_timezone_set('Asia/Kolkata');
-                $date = date('d-m-Y H:i');
+                $date = date('Y-m-d H:i:s', time());
 
                 $result_t = array();
                 $result_t['sub'] = $result[0]->email;
@@ -163,8 +164,9 @@ class Users extends CI_Controller
             if (!empty($name) && !empty($email) && !empty($mobile) && !empty($username) && !empty($role) && !empty($status) && !empty($password)) {
                 // all values are available
                 $password = password_hash($password, PASSWORD_BCRYPT);
-                date_default_timezone_set("America/New_York");
+                date_default_timezone_set('Asia/Kolkata');
                 $created_date = date('Y-m-d H:i:s', time());
+             
                 $user = array(
                     "name" => $name,
                     "email" => $email,
@@ -181,14 +183,14 @@ class Users extends CI_Controller
                 if ($this->Users_model->insert('tbl_users', $user)) {
 
                     $arr = array(
-                        'status' => 1,
+                        'status' => "success",
                         'message' => 'User has been created',
                     );
                     echo json_encode($arr);
                 } else {
 
                     $arr = array(
-                        'status' => 0,
+                        'status' => "error",
                         'message' => 'Failed to create User',
                     );
                     echo json_encode($arr);
@@ -196,7 +198,7 @@ class Users extends CI_Controller
             } else {
                 // we have some empty field
                 $arr = array(
-                    'status' => 0,
+                    'status' => "error",
                     'message' => 'All fields are needed',
                 );
                 echo json_encode($arr);
@@ -207,12 +209,12 @@ class Users extends CI_Controller
 
     // GET: All users from table
     
-    public function getAllUsers($page)
+    public function getAllUsers($page,$row_limit)
 	{ 
     $first_page= false;
     $last_page = false;
     $total_records = $this->Users_model->getCount('tbl_users');
-    $row_limit = 2;
+    // $row_limit = 2;
     $total_pages = ceil($total_records/$row_limit);
 
     // handle errors
@@ -239,6 +241,7 @@ class Users extends CI_Controller
       }
       $data_arr = $this->Users_model->get_users('tbl_users', $skip, $row_limit);
        
+    //   print_r($data_arr);
       $arr = array(
         'status' => 'success',
         'first_page' => $first_page,
@@ -277,6 +280,37 @@ class Users extends CI_Controller
 
     }
 
+    // GET: <project_url>/index.php/User
+  public function getUserById($id){
+    // list data method
+    //echo "This is GET Method";
+    // SELECT * from tbl_Users;
+    $users = $this->Users_model->get_userById('tbl_users',$id);
+
+    //print_r($query->result());    
+
+    if(count($users) > 0){
+
+      $arr = array(
+        "status" =>"success",
+        "message" => "Users found",
+        "data" => $users
+      );
+      echo json_encode($arr);
+    }else{
+
+      $arr = array(
+        "status" => "error",
+        "message" => "No Users found",
+        "data" => $users
+      );
+      echo json_encode($arr);
+    }
+
+
+
+  }
+
     public function authUserToken($roleArr)
     {
         $req = $this->input->request_headers();
@@ -286,8 +320,8 @@ class Users extends CI_Controller
             $token_data = $this->verifyAuthToken($token);
             // print_r($token_data);
             date_default_timezone_set('Asia/Kolkata');
-            $current_date = date('d-m-Y H:i:s', time());
-            $token_date = date("d-m-Y H:i:s", $token_data->exp);
+            $current_date = date('Y-m-d H:i:s', time());
+            $token_date = date("Y-m-d H:i:s", $token_data->exp);
 
             // echo strtotime($current_date);
             // echo strtotime($token_date);
@@ -327,7 +361,7 @@ class Users extends CI_Controller
         $data = json_decode(file_get_contents("php://input"));
 
         if (isset($id) && isset($data->name) && isset($data->email) && isset($data->mobile) && isset($data->username)) {
-            date_default_timezone_set("America/New_York");
+            date_default_timezone_set('Asia/Kolkata');
             $updated_date = date('Y-m-d H:i:s', time());
 
             $user_id = $id;
@@ -342,14 +376,14 @@ class Users extends CI_Controller
             if ($this->Users_model->update('tbl_users', $user_id, $user_info)) {
 
                 $arr = array(
-                    'status' => 1,
+                    'status' => "success",
                     'message' => 'User data updated successfully',
                 );
                 echo json_encode($arr);
             } else {
 
                 $arr = array(
-                    'status' => 0,
+                    'status' => "error",
                     'message' => 'Failed to update User data',
                 );
                 echo json_encode($arr);
@@ -369,9 +403,7 @@ class Users extends CI_Controller
         // delete data method
         $data = json_decode(file_get_contents("php://input"));
 
-        $user_id = $this->security->xss_clean($id);
-
-        if ($this->Users_model->delete('tbl_users', $user_id)) {
+        if ($this->Users_model->delete('tbl_users', $id)) {
             // retruns true
 
             $arr = array(
@@ -383,7 +415,7 @@ class Users extends CI_Controller
             // return false
             $arr = array(
                 'status' => 'error',
-                'message' => 'Failed to delete User',
+                'message' => 'User id not exist!',
             );
             echo json_encode($arr);
         }
@@ -444,6 +476,17 @@ class Users extends CI_Controller
 
    
   }
+  
+
+  function generateRandomString($length = 30) {
+    $characters = '0123456789abcdefghijklmnopq@$rstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
 
   public function forgotPassword()
   {
@@ -456,8 +499,8 @@ class Users extends CI_Controller
         $detail = $check_email[0];
         $id = $detail->id;
         $name = $detail->name;
-        // $hash = $detail->hash_code;
-        $hash = 'testhashcode';
+        // $hash = $detail->hash_code; 
+        $hash = $this->generateRandomString();
       // send Email.......................................
         $this->load->library('email');
         $this->email->from('info@mistpl.com',"Reset Your Password");
@@ -470,14 +513,24 @@ class Users extends CI_Controller
          <b>Hi, '.$name.'</b>
          <p>Forgot your password? click on below link to reset your new password.
          <br><br>
-         <a href="http://localhost:4200/reset_password/profile_id='.$id.'&email='.$email.'&hash='.$hash.'">Reset Password</a>
+         <a href="http://localhost:4200/reset_password/'.$hash.'">Reset Password</a>
+         <a href="https://valetpoint.co.in/svast/reset_password/'.$hash.'">Reset Password</a>
          </p>
          </div>
          ';
-        $this->email->message($message);
+        $this->email->message($message); 
         if($this->email->send()){
+            date_default_timezone_set('Asia/Kolkata');
+            $created_date = date('Y-m-d H:i:s', time());
+            $user = array(
+                "user_id" => $id,
+                "token" => $hash,
+                "date" => $created_date
+            );
 
-          // inset in reset_password token, userid, token, current time, 
+            echo json_encode($user);
+            $this->Users_model->insert('tbl_reset_password_token', $user);
+
           $result = array(
            'status' => 'success',
            'message' => 'Please check your email, we have sent a link at '.$email.' to reset your password.'
@@ -503,54 +556,63 @@ class Users extends CI_Controller
     } 
   }
 
-  public function reset_password()
+  public function resetPassword()
     {
         $_POST = json_decode(file_get_contents('php://input'), true);
         $data = $this->input->post();
-
-       // if(!$this->session->has_userdata('isloggedin')) {
         $new_password = $data['password'];
-        $conf_password = $data['confirm_password'];
-        $id = $data['id'];
-        $email = $data['email'];
-        $hash = $data['hash'];
-        $where = array('id' => $id, 'email' => $email , 'hash_code'=>$hash);
-        $acc = $this->Auth_model->getData("users", $where);
-      if($acc)
-      { 
-        if($new_password != $conf_password) {
-           $result = array(
-            'status'=> 0,
-            'message'=>"The passwords you entered doesn't match."
-           );
-           echo json_encode($result);          
-        } else {
-          $detail = $acc[0];
-          $update = $this->Auth_model->updateData("users", array("password" => password_hash($new_password, PASSWORD_BCRYPT)), array("id" => $id, "email" => $email,"hash_code"=>$hash));
-          if($update) {
-             $result = array(
-               'status'=> 1,
-               'message'=>"Your password has been successfully changed."
-             );
-             echo json_encode($result);
-           }else {
-             $result = array(
-               'status'=> -1,
-               'message'=>"Password reset failed, please try again."
-             );
-             echo json_encode($result);
-          }
+        $hash = $data['token'];
+        $where = array('token'=>$hash);
+        $res = $this->Users_model->getResetTokenData('tbl_reset_password_token', $where);
+        if($res){
+
+            $user_id = $res->user_id;
+            $token_date = $res->date;
+            date_default_timezone_set('Asia/Kolkata');
+            $current_date = date('Y-m-d h:i A', time());
+    
+            $seconds = strtotime($current_date) - strtotime($token_date);
+            $hours = $seconds / 60 / 60;
+           
+            if ($hours<=24) {
+                $password = password_hash($new_password, PASSWORD_BCRYPT);  
+                $res=$this->Users_model->update('tbl_users',$user_id, array('password' => $password)); 
+                if($res)
+                {
+                 
+                 $arr = array(
+                     'status' => 'success',
+                     'message' => 'Password updated successfully',
+                 );
+                 echo json_encode($arr);
+                } else {
+    
+                 $arr = array(
+                     'status' => 'error',
+                     'message' => 'Failed to reset password',
+                 );
+                 echo json_encode($arr);
+             }
+    
+            }
+            else{
+                $arr = array(
+                    'status' => 'error',
+                    'message' => 'Link exprire!',
+                );
+                echo json_encode($arr);
+            }
         }
-       }else{
-          $result = array(
-               'status'=> -2,
-               'message'=>"Something went wrong...."
-             );
-          echo json_encode($result);
-       }
-        // } else {
-        //     $this->index();
-        // }
+        else{
+            $arr = array(
+                'status' => 'error',
+                'message' => 'Invalid Token!',
+            );
+            echo json_encode($arr);
+        }
+ 
     }
 
+
 }
+

@@ -20,6 +20,17 @@ class Users_model extends CI_Model
         } else {
             return false;
         }
+    } 
+
+    public function getResetTokenData($table='',$where='')
+    {
+       if(!empty($where)){
+        $this->db->where($where);
+        $res = $this->db->get($table);  
+        return ($res->num_rows())? $res->result()[0] : false;
+       }else{
+        return false;
+       }
     }
 
     public function insert($table,$data){
@@ -34,7 +45,7 @@ class Users_model extends CI_Model
     
     public function get_users($table ,$skip, $limit) 
     { 
-      $this->db->select("name,email,mobile,username,role,created_at");    
+      $this->db->select("id,name,email,mobile,username,role,created_at");    
       $this->db->order_by("created_at", "desc");
       $query = $this->db->get($table, $limit, $skip);
     // print_r($query->result_array());
@@ -51,17 +62,27 @@ class Users_model extends CI_Model
         return $query->result_array()[0];
     }
 
-    public function delete($table,$user_id){
+    public function delete($table,$id){
 
         // delete method
-        $this->db->where("id", $user_id);
-        return $this->db->delete($table);
+        $this->db->delete($table, ['id' => $id]);
+        return $this->db->affected_rows();
     }
 
     public function update($table,$user_id, $user_info){
 
         $this->db->where("id", $user_id);
         return $this->db->update($table, $user_info);
+    }
+
+    public function get_userById($table,$id){
+
+        $this->db->select("*");
+        $this->db->from($table);
+        $this->db->where("id", $id);
+        $query = $this->db->get();
+    
+        return $query->result();
     }
 
   

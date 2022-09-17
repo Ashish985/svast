@@ -38,3 +38,47 @@
     echo json_encode($output_data);
     exit();
        
+  
+
+
+      
+      $save['email']  = 'ashish@mistpl.com';
+      $save['name']   = 'Ashish';
+      $save['verification_code'] = 'generateString(50)';
+
+      if(1){
+      $message = 'test message';
+      $mail_config['smtp_host'] = 'smtp.gmail.com';
+      $mail_config['smtp_port'] = '587';
+      $mail_config['smtp_user'] = 'amangupta1542@gmail.com';
+      $mail_config['_smtp_auth'] = TRUE;
+      $mail_config['smtp_pass'] = 'ofeasqzmvrjcsxaf';
+      $mail_config['smtp_crypto'] = 'tls';
+      $mail_config['protocol'] = 'smtp';
+      $mail_config['mailtype'] = 'html';
+      $mail_config['send_multipart'] = FALSE;
+      $mail_config['charset'] = 'utf-8';
+      $mail_config['wordwrap'] = TRUE;
+      $this->email->initialize($mail_config);
+
+          $this->email->set_newline("\r\n");
+
+          $this->load->library('email');
+          $this->email->set_mailtype("html");
+          $this->email->from('amangupta1542@gmail.com', 'Svast');
+          $this->email->to($save['email']); 
+
+          $this->email->subject('Comfirmation required Test mail');
+          $this->email->message($message);  
+          if($this->email->send())
+          {
+          //    $this->session->set_flashdata('success', 'Please verify your email. Info sent in email to you.');
+          }
+          else
+          {
+              // $this->session->set_flashdata('error', 'Something went wrong. Please share after some time.');
+          }
+      }
+      else{
+          // $this->session->set_flashdata('error', 'Something went wrong. Please share after some time.');
+      }
