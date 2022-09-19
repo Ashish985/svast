@@ -351,7 +351,7 @@ class Users extends CI_Controller
             //if auth key not in header then return
             return false;
         }
-    }
+    } 
 
     // PUT: <project_url>/index.php/student
     public function update($id)
@@ -391,7 +391,7 @@ class Users extends CI_Controller
         } else {
 
             $arr = array(
-                'status' => 0,
+                'status' => "error",
                 'message' => 'All fields are needed',
             );
             echo json_encode($arr);

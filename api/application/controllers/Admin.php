@@ -180,57 +180,90 @@ class Admin extends CI_Controller{
     } else {
 
         $arr = array(
-         'status' => 0,
+         'status' => "error",
          'message' => 'All fields are needed',
         );
         echo json_encode($arr);
     }              
   }
   
-  //delete output file data by id
-  public function outputfileDelete($id)
-	{  
-    $data = json_decode(file_get_contents("php://input"));
+    //delete output file data by id
+    public function outputfileDelete()
+    {  
+      $data = json_decode(file_get_contents("php://input"));
+      $id = $data->id;
+      $is_del = $this->Admin_model->outputfileDeletedById('tbl_output', $id);
+  
+      echo json_encode($is_del);
+    }
+    
 
-    if ($this->Admin_model->outputfileDelete('tbl_output', $id)) {
-        // retruns true
+      // delete multiple data from excel file 
+  public function outputFileDeleteMultiple(){
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $data = $this->input->post();
+    $ids = $data['ids'];
+    $is_del = $this->Admin_model->deletedByIdMul('tbl_output', $ids);
 
-        $arr = array(
-            'status' => 'success',
-            'message' => 'record has been deleted',
-        );
-        echo json_encode($arr);
-    } else {
-        // return false
-        $arr = array(
-            'status' => 'error',
-            'message' => 'id not exist!',
-        );
-        echo json_encode($arr);
-    } 
+    echo json_encode($is_del);    
+
   }
 
-  public function clients()
-	{ 
-    $data_arr = $this->Admin_model->get_clients('tbl_clients');
-      // print_r($data_arr);
-    if ($data_arr) {
-      $arr = array(
-        'status' => 'success',
-        'data'=> $data_arr
-      );
-      echo json_encode($arr);
-    }
-    else{
-      $arr = array(
-        'status' => 'error',
-        'message'=> 'error'
-      );
-      echo json_encode($arr);
-    }
-      
-  }
+  public function createClient()
+  {
+    // insert data method
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    //print_r($this->input->post());die;
 
+    // collecting form data inputs
+    $name = $this->security->xss_clean($this->input->post("name"));
+
+    // form validation for inputs
+    $this->form_validation->set_rules("name", "Name", "required");
+      // checking form submittion have any error or not
+      if ($this->form_validation->run() === false) {
+          // we have some errors
+          $arr = array(
+              'status' => 0,
+              'message' => 'All fields are needed',
+          );
+          echo json_encode($arr);
+      } else {
+          if (!empty($name) ) {
+              // all values are available  
+              $data = array(
+
+                "name" => $name,
+    
+              );
+              // echo json_encode($user);
+              if ($this->Admin_model->create('tbl_clients', $data)) {
+                  $arr = array(
+                      'status' => "success",
+                      'message' => 'client has been created',
+                  );
+                  echo json_encode($arr);
+                } else {
+
+                    $arr = array(
+                        'status' => "error",
+                        'message' => 'Failed to create client',
+                    );
+                    echo json_encode($arr);
+                }
+            } else {
+                // we have some empty field
+                $arr = array(
+                    'status' => "error",
+                    'message' => 'All fields are needed',
+                );
+                echo json_encode($arr);
+          }
+      }
+
+  }
+  
+  //create new clients
   public function client()
 	{ 
     
@@ -259,7 +292,82 @@ class Admin extends CI_Controller{
     }
       
   }
+  
+  //get all client
+  public function clients()
+	{ 
+    $data_arr = $this->Admin_model->get_clients('tbl_clients');
+      // print_r($data_arr);
+    if ($data_arr) {
+      $arr = array(
+        'status' => 'success',
+        'data'=> $data_arr
+      );
+      echo json_encode($arr);
+    }
+    else{
+      $arr = array(
+        'status' => 'error',
+        'message'=> 'error'
+      );
+      echo json_encode($arr);
+    }
+      
+  }
+
+  //delete client data by id
+  public function deleteClient()
+	{  
+    $data = json_decode(file_get_contents("php://input"));
+    $id = $data->id;
+    $is_del = $this->Admin_model->outputfileDeletedById('tbl_clients', $id);
+
+    echo json_encode($is_del);
+  }
+  
+   // update output file data by id
+  public function updateClient($id)
+	{ 
+    
+    $data = json_decode(file_get_contents("php://input"));
+  
+    if (isset($data->name)) {
+       
+       $data = array(
+        "name" => $data->name
+        
+       );
+       $res=$this->Admin_model->outputfileEdit('tbl_clients', $id, $data);  
+        
+       if ($res) {
+ 
+        $arr = array(
+          'status' => "success",
+          'message' => 'Client updated successfully',
+        );
+        echo json_encode($arr);
+       } else {
+
+         $arr = array(
+          'status' => "error",
+          'message' => 'Failed to update client',
+         );
+        echo json_encode($arr);
+       }
+    } else {
+
+        $arr = array(
+         'status' => "error",
+         'message' => 'All fields are needed',
+        );
+        echo json_encode($arr);
+    }              
+  }
+
+
 
 
 }
+
+
 ?>

@@ -20,7 +20,7 @@ class Users_model extends CI_Model
         } else {
             return false;
         }
-    } 
+    }  
 
     public function getResetTokenData($table='',$where='')
     {
@@ -37,7 +37,18 @@ class Users_model extends CI_Model
 
         return $this->db->insert($table, $data);
     }
-
+   
+    function is_record_exists($table, $id)
+   {
+      $this->db->where('id',$id);
+      $query = $this->db->get($table);
+      if ($query->num_rows() > 0){
+         return true;
+      }
+      else{
+         return false;
+      }
+   }
 
     public function getCount($table){
         return $this->db->count_all_results($table);
@@ -49,7 +60,7 @@ class Users_model extends CI_Model
       $this->db->order_by("created_at", "desc");
       $query = $this->db->get($table, $limit, $skip);
     // print_r($query->result_array());
-      return $query->result_array();
+      return $query->result_array(); 
     }
 
     public function getUserProfile($table,$user_email)
@@ -69,9 +80,13 @@ class Users_model extends CI_Model
     }
 
     public function update($table,$user_id, $user_info){
-
-        $this->db->where("id", $user_id);
-        return $this->db->update($table, $user_info);
+     if($this->is_record_exists($table, $user_id,$user_info) == true){
+       $this->db->where('id', $user_id);
+       return $this->db->update($table, $user_info); 
+      }
+      else{
+      return false;
+      }
     }
 
     public function get_userById($table,$id){
