@@ -63,8 +63,7 @@ class Users_model extends CI_Model
     }
 
     public function delete($table,$id){
-
-        // delete method
+   
         $this->db->delete($table, ['id' => $id]);
         return $this->db->affected_rows();
     }

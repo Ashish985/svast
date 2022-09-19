@@ -178,7 +178,7 @@ class Users extends CI_Controller
                     "created_at" => $created_date,
                 );
 
-                echo json_encode($user);
+                // echo json_encode($user);
 
                 if ($this->Users_model->insert('tbl_users', $user)) {
 
@@ -372,7 +372,7 @@ class Users extends CI_Controller
                 "username" => $data->username,
                 "updated_date" => $updated_date,
             );
-            echo json_encode($user_info);
+            // echo json_encode($user_info);
             if ($this->Users_model->update('tbl_users', $user_id, $user_info)) {
 
                 $arr = array(
@@ -513,8 +513,8 @@ class Users extends CI_Controller
          <b>Hi, '.$name.'</b>
          <p>Forgot your password? click on below link to reset your new password.
          <br><br>
-         <a href="http://localhost:4200/reset_password/'.$hash.'">Reset Password</a>
-         <a href="https://valetpoint.co.in/svast/reset_password/'.$hash.'">Reset Password</a>
+         <a href="http://localhost:4200/auth/reset-password/'.$hash.'">Reset Password</a>
+         <a href="https://valetpoint.co.in/svast/frontend/auth/reset-password/'.$hash.'">Reset Password</a>
          </p>
          </div>
          ';
@@ -525,10 +525,11 @@ class Users extends CI_Controller
             $user = array(
                 "user_id" => $id,
                 "token" => $hash,
+                "is_reset"=>false,
                 "date" => $created_date
             );
 
-            echo json_encode($user);
+            // echo json_encode($user);
             $this->Users_model->insert('tbl_reset_password_token', $user);
 
           $result = array(
@@ -564,36 +565,47 @@ class Users extends CI_Controller
         $hash = $data['token'];
         $where = array('token'=>$hash);
         $res = $this->Users_model->getResetTokenData('tbl_reset_password_token', $where);
+        $res_id =$res->id;
         if($res){
+            if(!$res->is_reset){
 
-            $user_id = $res->user_id;
-            $token_date = $res->date;
-            date_default_timezone_set('Asia/Kolkata');
-            $current_date = date('Y-m-d h:i A', time());
-    
-            $seconds = strtotime($current_date) - strtotime($token_date);
-            $hours = $seconds / 60 / 60;
-           
-            if ($hours<=24) {
-                $password = password_hash($new_password, PASSWORD_BCRYPT);  
-                $res=$this->Users_model->update('tbl_users',$user_id, array('password' => $password)); 
-                if($res)
-                {
-                 
-                 $arr = array(
-                     'status' => 'success',
-                     'message' => 'Password updated successfully',
-                 );
-                 echo json_encode($arr);
-                } else {
-    
-                 $arr = array(
-                     'status' => 'error',
-                     'message' => 'Failed to reset password',
-                 );
-                 echo json_encode($arr);
-             }
-    
+                $user_id = $res->user_id;
+                $token_date = $res->date;
+                date_default_timezone_set('Asia/Kolkata');
+                $current_date = date('Y-m-d h:i A', time());
+        
+                $seconds = strtotime($current_date) - strtotime($token_date);
+                $hours = $seconds / 60 / 60;
+            
+                if ($hours<=24) {
+                    $password = password_hash($new_password, PASSWORD_BCRYPT);  
+                    $res=$this->Users_model->update('tbl_users',$user_id, array('password' => $password)); 
+                    if($res)
+                    {
+                    $this->Users_model->update('tbl_reset_password_token',$res_id, array('is_reset' => true));
+                    
+                    $arr = array(
+                        'status' => 'success',
+                        'message' => 'Password updated successfully',
+                    );
+                    echo json_encode($arr);
+                    } else {
+        
+                    $arr = array(
+                        'status' => 'error',
+                        'message' => 'Failed to reset password',
+                    );
+                    echo json_encode($arr);
+                }
+        
+                }
+                else{
+                    $arr = array(
+                        'status' => 'error',
+                        'message' => 'Link exprire!',
+                    );
+                    echo json_encode($arr);
+                }
             }
             else{
                 $arr = array(
