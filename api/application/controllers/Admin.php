@@ -117,6 +117,99 @@ class Admin extends CI_Controller{
 
   }
 
+  // get output file data by id
+  public function getOutputFile($id)
+	{ 
+    $res = $this->Admin_model->outputfileGet('tbl_output',$id);
+
+    //print_r($query->result());    
+
+    if(count($res) > 0){
+
+      $arr = array(
+        "status" =>"success",
+        "message" => "data found",
+        "data" => $res
+      );
+      echo json_encode($arr);
+    }else{
+
+      $arr = array(
+        "status" => "error",
+        "message" => "No data found",
+        "data" => $res
+      );
+      echo json_encode($arr);
+    }    
+  }
+  
+  // update output file data by id
+  public function outputfileUpdate($id)
+	{ 
+    
+    $data = json_decode(file_get_contents("php://input"));
+  
+    if (isset($data->uid) && isset($data->facility) && isset($data->carrierName) && isset($data->voucherNumber) 
+       && isset($data->accountNumber) && isset($data->patientName)) {
+       
+       $data = array(
+        "UID"           => $data->uid,
+        "Facility"      => $data->facility,
+        "CarrierName"   => $data->carrierName,
+        "VoucherNumber" => $data->voucherNumber,
+        "AccountNumber" => $data->accountNumber,
+        "PatientName"   => $data->patientName
+       );
+        // echo json_encode($data);
+        
+       if ($this->Admin_model->outputfileEdit('tbl_output', $id, $data)) {
+ 
+        $arr = array(
+          'status' => "success",
+          'message' => 'file data updated successfully',
+        );
+        echo json_encode($arr);
+       } else {
+
+         $arr = array(
+          'status' => "error",
+          'message' => 'Failed to update file data',
+         );
+        echo json_encode($arr);
+       }
+    } else {
+
+        $arr = array(
+         'status' => 0,
+         'message' => 'All fields are needed',
+        );
+        echo json_encode($arr);
+    }              
+  }
+  
+  //delete output file data by id
+  public function outputfileDelete($id)
+	{  
+    $data = json_decode(file_get_contents("php://input"));
+
+    if ($this->Admin_model->outputfileDelete('tbl_output', $id)) {
+        // retruns true
+
+        $arr = array(
+            'status' => 'success',
+            'message' => 'record has been deleted',
+        );
+        echo json_encode($arr);
+    } else {
+        // return false
+        $arr = array(
+            'status' => 'error',
+            'message' => 'id not exist!',
+        );
+        echo json_encode($arr);
+    } 
+  }
+
   public function clients()
 	{ 
     $data_arr = $this->Admin_model->get_clients('tbl_clients');

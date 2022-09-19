@@ -370,7 +370,7 @@ class Users extends CI_Controller
                 "email" => $data->email,
                 "mobile" => $data->mobile,
                 "username" => $data->username,
-                "updated_date" => $updated_date,
+                "updated_date" => $updated_date
             );
             // echo json_encode($user_info);
             if ($this->Users_model->update('tbl_users', $user_id, $user_info)) {

@@ -48,6 +48,32 @@ class Admin_model extends CI_Model{
 	// print_r($query->result_array());
 	return $query->result_array();
    }
+  
+   //exel outputfile data get by id 
+   public function outputfileGet($table,$id) 
+   {
+      $this->db->select("*");
+      $this->db->from($table);
+      $this->db->where("id", $id);
+      $query = $this->db->get();
+  
+      return $query->result();
+   } 
+
+   //delete exel outputfile data by id 
+   public function outputfileDelete($table,$id) 
+   {
+      $this->db->delete($table, ['id' => $id]);
+      return $this->db->affected_rows();
+   }
+
+   //edit exel outputfile data by id 
+   public function outputfileEdit($table,$id,$data) 
+   {
+   //   print_r($data);
+     $this->db->where("id", $id);
+     return $this->db->update($table, $data); 
+   }
 
 
 }
