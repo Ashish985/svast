@@ -225,58 +225,57 @@ class Admin extends CI_Controller{
   }
 
   public function createClient()
-  {
-    // insert data method
-    $_POST = json_decode(file_get_contents('php://input'), true);
-    //print_r($this->input->post());die;
+	{
+	  $is_featured = $this->input->post('avatar');
+	  $name = $this->input->post('name');
+    $filename = NULL;
+    $isUploadError = FALSE;
 
-    // collecting form data inputs
-    $name = $this->security->xss_clean($this->input->post("name"));
+			if ($_FILES && $_FILES['avatar']['name']) {
 
-    // form validation for inputs
-    $this->form_validation->set_rules("name", "Name", "required");
-      // checking form submittion have any error or not
-      if ($this->form_validation->run() === false) {
-          // we have some errors
-          $arr = array(
-              'status' => "error",
-              'message' => 'All fields are needed',
-          );
-          echo json_encode($arr);
-      } else {
-          if (!empty($name) ) {
-              // all values are available  
-              $data = array(
+				$config['upload_path']          = './assets/clientimage/';
+	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
+	            $config['max_size']             = 500;
 
-                "name" => $name,
-    
-              );
-              // echo json_encode($user);
-              if ($this->Admin_model->create('tbl_clients', $data)) {
-                  $arr = array(
-                      'status' => "success",
-                      'message' => 'client has been created',
-                  );
-                  echo json_encode($arr);
-                } else {
+	            $this->load->library('upload', $config);
+	            if ( ! $this->upload->do_upload('avatar')) {
 
-                    $arr = array(
-                        'status' => "error",
-                        'message' => 'Failed to create client',
-                    );
-                    echo json_encode($arr);
-                }
-            } else {
-                // we have some empty field
-                $arr = array(
-                    'status' => "error",
-                    'message' => 'All fields are needed',
-                );
-                echo json_encode($arr);
-          }
-      }
+	            	$isUploadError = TRUE;
 
-  }
+					$response = array(
+						'status' => 'error',
+						'message' => $this->upload->display_errors()
+					);
+	            }
+	            else {
+	            	$uploadData = $this->upload->data();
+            		$filename = $uploadData['file_name'];
+	            }
+			}
+
+			if( ! $isUploadError) {
+	        	$blogData = array(
+					 
+					'image' => $filename,
+          'name' => $name
+			 
+				);
+
+				$id = $this->Admin_model->create('tbl_clients',$blogData);
+
+				$response = array(
+					'status' => 'success',
+          'data'=>$blogData
+				);
+			}
+
+			$this->output
+				->set_status_header(200)
+				->set_content_type('application/json')
+				->set_output(json_encode($response)); 
+		}
+	
+
   
   //create new clients
   public function client()
@@ -440,7 +439,10 @@ class Admin extends CI_Controller{
      );
      echo json_encode($arr);
   }
-  
+
+
+ 
+ 
 
 }
 
