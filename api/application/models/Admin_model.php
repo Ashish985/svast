@@ -15,7 +15,7 @@ class Admin_model extends CI_Model{
 
    public function get_clients($table) 
     { 
-      $this->db->select("name");    
+      $this->db->select("id,image,name,created_date");    
       // $this->db->order_by("created_date", "desc");
       $query = $this->db->get($table);
       // print_r($query->result());
@@ -59,7 +59,7 @@ class Admin_model extends CI_Model{
    {
       $this->db->select("*");
       $this->db->from($table);
-      $this->db->where("id", $id);
+      $this->db->where("id", $id); 
       $query = $this->db->get();
   
       return $query->result();
@@ -81,7 +81,6 @@ class Admin_model extends CI_Model{
    //delete exel outputfile data by id 
    public function outputfileDeletedById($table,$id) 
    {
-      print_r($id);
       
       if($this->is_record_exists($table, $id) == true){
          $this->db->where('id', $id);
@@ -114,6 +113,21 @@ class Admin_model extends CI_Model{
      );
    }
 
+   public function updateByIdMul($is_data) 
+   {
+          // Check so incoming data is actually an array and not empty
+    if (is_array($is_data) && ! empty($is_data))
+    {
+      $this->db->update_batch('tbl_clients', $is_data, 'id');
+      return array(
+         'status' => 'success',
+         'message' => 'record has been updated',
+      );
+    }
+    return false;
+   }
+
+
    //edit exel outputfile data by id 
    public function outputfileEdit($table,$id,$data) 
    {
@@ -127,6 +141,33 @@ class Admin_model extends CI_Model{
      }
       
    }
+ 
+   public function get_data($table, $role) 
+   { 
+     $this->db->select("id,name,email,mobile,username,role,created_at");
+     $this->db->from($table);
+     $this->db->where('role', $role);
+     $query = $this->db->get();
+     return $query->result();
+   }
+
+   public function insert_data($table, $data){
+     // echo json_encode($data);
+     for ($i=0; $i < count($data); $i++) { 
+        $this->db->insert($table,$data[$i]);
+     }
+        // $this->db->insert_batch($table,$data);
+         return true;
+   }
+
+
+   public function get_count($table){
+      $this->db->select('COUNT(*) as count');
+      $this->db->from($table);
+      $query = $this->db->get();
+      return $query->result();
+    }
+
 
 
 }

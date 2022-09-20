@@ -626,5 +626,45 @@ class Users extends CI_Controller
     }
 
 
+    public function DashboardDataManager(){
+
+        $data = array(
+        );
+    
+        $arr = array(
+          'status' => "success",
+          'message' => 'OK',
+          'data' => $data,
+         );
+         echo json_encode($arr);
+      }
+    
+      public function DashboardDataAgent(){
+    
+        $data = array(
+        );
+    
+        $arr = array(
+          'status' => "success",
+          'message' => 'OK',
+          'data' => $data,
+         );
+         echo json_encode($arr);
+      }
+    
+      public function DashboardDataClient(){
+    
+        $data = array(
+        );
+    
+        $arr = array(
+          'status' => "success",
+          'message' => 'OK',
+          'data' => $data,
+         );
+         echo json_encode($arr);
+      }
+
+
 }
 

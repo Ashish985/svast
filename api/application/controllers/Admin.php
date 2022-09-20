@@ -203,9 +203,24 @@ class Admin extends CI_Controller{
     $_POST = json_decode(file_get_contents('php://input'), true);
     $data = $this->input->post();
     $ids = $data['ids'];
+    
     $is_del = $this->Admin_model->deletedByIdMul('tbl_output', $ids);
 
     echo json_encode($is_del);    
+
+  }
+
+ 
+
+  public function updateMultiple(){
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $data = $this->input->post();
+    $is_data = $data['data'];
+    print_r($is_data);
+    
+    $res = $this->Admin_model->updateByIdMul($is_data);
+
+    echo json_encode($res);  
 
   }
 
@@ -224,7 +239,7 @@ class Admin extends CI_Controller{
       if ($this->form_validation->run() === false) {
           // we have some errors
           $arr = array(
-              'status' => 0,
+              'status' => "error",
               'message' => 'All fields are needed',
           );
           echo json_encode($arr);
@@ -365,7 +380,67 @@ class Admin extends CI_Controller{
   }
 
 
+  public function GetManagerAgent(){
 
+    $managers = $this->Admin_model->get_data('tbl_users', 2);
+    $agents = $this->Admin_model->get_data('tbl_users', 3);
+    // $manager_agents = array(
+    //   'manager' => ,
+    //   'agents' => $agents
+    // );
+
+    $data = array(
+      'managers' => $managers,
+      'agents' => $agents
+      // 'manager_agents' => $manager_agents
+    );
+
+    $arr = array(
+      'status' => "success",
+      'message' => 'OK',
+      'data' => $data,
+     );
+     echo json_encode($arr);
+  }
+
+
+  public function AssignManagerAgent(){
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $data = $this->input->post();
+    $arrs = array();
+    foreach ($data['agents'] as $agent) {
+      array_push($arrs,array('manager' => $data['manager'], 'agent' => $agent));
+    }
+    $this->Admin_model->insert_data('manager_agent',$arrs);
+
+    $arr = array(
+      'status' => "success",
+      'message' => 'Assigned Successfully',
+     );
+     echo json_encode($arr);
+  }
+
+
+  public function DashboardDataAdmin(){
+
+    $managers = $this->Admin_model->get_data('tbl_users', 2);
+    $agents = $this->Admin_model->get_data('tbl_users', 3);
+    $users = $this->Admin_model->get_count('tbl_users');
+
+    $data = array(
+      'managers' => $managers,
+      'agents' => $agents,
+      'users' => $users
+    );
+
+    $arr = array(
+      'status' => "success",
+      'message' => 'OK',
+      'data' => $data,
+     );
+     echo json_encode($arr);
+  }
+  
 
 }
 
