@@ -277,6 +277,59 @@ class Admin extends CI_Controller{
 		}
 	
 
+  public function createPMS()
+	{
+	  $is_featured = $this->input->post('avatar');
+	  $name = $this->input->post('name');
+    $filename = NULL;
+    $isUploadError = FALSE;
+
+			// if ($_FILES && $_FILES['avatar']['name']) {
+        if (true) {
+        
+				$config['upload_path']          = './assets/clientimage/';
+	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
+	            $config['max_size']             = 500;
+
+	            $this->load->library('upload', $config);
+	            if ( ! $this->upload->do_upload('avatar')) {
+
+	            	$isUploadError = TRUE;
+
+					$response = array(
+						'status' => 'error',
+						'message' => $this->upload->display_errors()
+					);
+	            }
+	            else {
+	            	$uploadData = $this->upload->data();
+            		$filename = $uploadData['file_name'];
+	            }
+			}
+
+			if( ! $isUploadError) {
+	        	$blogData = array(
+					 
+					'image' => $filename,
+          'name' => $name
+			 
+				);
+
+				$id = $this->Admin_model->create('tbl_pms',$blogData);
+
+				$response = array(
+					'status' => 'success',
+          'data'=>$blogData
+				);
+			}
+
+			$this->output
+				->set_status_header(200)
+				->set_content_type('application/json')
+				->set_output(json_encode($response)); 
+		}
+	
+
   
   //create new clients
   public function client()
@@ -330,18 +383,40 @@ class Admin extends CI_Controller{
       
   }
 
+    //get all pms
+    public function GetPMS()
+    { 
+      $data_arr = $this->Admin_model->get_clients('tbl_pms');
+        // print_r($data_arr);
+      if ($data_arr) {
+        $arr = array(
+          'status' => 'success',
+          'data'=> $data_arr
+        );
+        echo json_encode($arr);
+      }
+      else{
+        $arr = array(
+          'status' => 'error',
+          'message'=> 'error'
+        );
+        echo json_encode($arr);
+      }
+        
+    }
+
   //delete client data by id
-  public function deleteClient()
+  public function deletePMS()
 	{  
     $data = json_decode(file_get_contents("php://input"));
     $id = $data->id;
-    $is_del = $this->Admin_model->outputfileDeletedById('tbl_clients', $id);
+    $is_del = $this->Admin_model->outputfileDeletedById('tbl_pms', $id);
 
     echo json_encode($is_del);
   }
   
    // update output file data by id
-  public function updateClient($id)
+  public function updatePMS($id)
 	{ 
     
     $data = json_decode(file_get_contents("php://input"));
@@ -352,20 +427,20 @@ class Admin extends CI_Controller{
         "name" => $data->name
         
        );
-       $res=$this->Admin_model->outputfileEdit('tbl_clients', $id, $data);  
+       $res=$this->Admin_model->outputfileEdit('tbl_pms', $id, $data);  
         
        if ($res) {
  
         $arr = array(
           'status' => "success",
-          'message' => 'Client updated successfully',
+          'message' => 'Record updated successfully',
         );
         echo json_encode($arr);
        } else {
 
          $arr = array(
           'status' => "error",
-          'message' => 'Failed to update client',
+          'message' => 'Failed to update ',
          );
         echo json_encode($arr);
        }
