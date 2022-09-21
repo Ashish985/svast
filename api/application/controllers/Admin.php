@@ -216,7 +216,7 @@ class Admin extends CI_Controller{
     $_POST = json_decode(file_get_contents('php://input'), true);
     $data = $this->input->post();
     $is_data = $data['data'];
-    print_r($is_data);
+    // print_r($is_data);
     
     $res = $this->Admin_model->updateByIdMul($is_data);
 
@@ -231,8 +231,9 @@ class Admin extends CI_Controller{
     $filename = NULL;
     $isUploadError = FALSE;
 
-			if ($_FILES && $_FILES['avatar']['name']) {
-
+			// if ($_FILES && $_FILES['avatar']['name']) {
+        if (true) {
+        
 				$config['upload_path']          = './assets/clientimage/';
 	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
 	            $config['max_size']             = 500;
@@ -417,6 +418,135 @@ class Admin extends CI_Controller{
       'message' => 'Assigned Successfully',
      );
      echo json_encode($arr);
+  }
+
+  public function AssignClaimsAgent(){
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $data = $this->input->post();
+    $arrs = array();
+    foreach ($data['claims'] as $claim) {
+      array_push($arrs,array('agent' => $data['agent'], 'claim_id' => $claim));
+    }
+    $this->Admin_model->insert_data('agent_claim',$arrs);
+
+    $arr = array(
+      'status' => "success",
+      'message' => 'Assigned Successfully',
+     );
+     echo json_encode($arr);
+  }
+
+  public function GetAssignClaimsAgent($page, $row_limit){
+    $user = $this->authUserToken([3]);
+    if($user){
+      $data = $this->Admin_model->get_where('agent_claim','agent', $user['id']);
+  
+      $arr = array(
+        'status' => "success",
+        'message' => 'OK',
+        'data' => $data
+       );
+       echo json_encode($arr);
+    }else{
+      $arr = array(
+        'status' => "error",
+        'message' => 'Login failed'
+       );
+       echo json_encode($arr);
+    }
+  }
+
+  public function GetManagerAgentMapping(){
+    $user = $this->authUserToken([2]);
+    if($user){
+      $data = $this->Admin_model->get_where2('manager_agent','manager', $user['id']);
+  
+      $arr = array(
+        'status' => "success",
+        'message' => 'OK',
+        'data' => $data
+       );
+       echo json_encode($arr);
+    }else{
+      $arr = array(
+        'status' => "error",
+        'message' => 'Login failed'
+       );
+       echo json_encode($arr);
+    }
+  }
+
+  public function verifyAuthToken($token)
+    {
+        $jwt = new JWT();
+        $jwtSecret = 'myloginSecret';
+        $verification = $jwt->decode($token, $jwtSecret, 'HS256');
+        return $verification;
+        // $verification_json = $jwt->jsonEncode($verification);
+        // return $verification_json;
+
+    }
+
+  public function authUserToken($roleArr)
+    {
+        $req = $this->input->request_headers();
+        if (array_key_exists('Authorization', $req)) {
+            $token = ltrim(substr($req['Authorization'], 6));
+            
+            $token_data = $this->verifyAuthToken($token);
+            // print_r($token_data);
+            date_default_timezone_set('Asia/Kolkata');
+            $current_date = date('Y-m-d H:i:s', time());
+            $token_date = date("Y-m-d H:i:s", $token_data->exp);
+
+            // echo strtotime($current_date);
+            // echo strtotime($token_date);
+            // echo strtotime($current_date) - strtotime($token_date);
+
+            if ((strtotime($current_date) - strtotime($token_date)) < 0) {
+                // get role from email
+                $user_email = $token_data->sub;
+
+                // return data getting by email
+                $res = $this->Users_model->getUserProfile('tbl_users', $user_email);
+                // print_r($res);
+                $role = $res['role'];
+                // if role of user is exist in $role arrya ten return false else data
+                if (in_array($role, $roleArr)) {
+                    return $res;
+                } else {
+                    //role is not matched means not autheticated for this action
+                    // echo "false";
+                    return false;
+                }
+            } else {
+                // if tooken invalid or expired then return
+                return false;
+            }
+        } else {
+            //if auth key not in header then return
+            return false;
+        }
+    } 
+
+  public function getMappedAgent(){
+    $manager = $this->Admin_model->get_mngrId('manager_agent');
+    $agent = $this->Admin_model->get_agentId('manager_agent');
+  
+    $agent_id=implode(', ', array_column($agent, 'agent'));
+    
+    $manager_id = "(" ."'" .implode("', '",array_column($manager, 'manager')) . "'". ")";
+    // echo $comma_list;
+
+    $this->db->select("name,email,manager,agent"); // Select field
+    $this->db->from('tbl_users'); // from Table1
+    $this->db->join('manager_agent','tbl_users.id = manager_agent.manager','INNER'); // Join table1 with table2 based on the foreign key
+    $this->db->group_by('manager_agent.manager'); // Set Filter
+    // $this->db->where('tbl_users.id',8); // Set Filter
+    // $this->db->where_in('tbl_users.id');
+    $res = $this->db->get();
+    print_r($res->result());
+
   }
 
 

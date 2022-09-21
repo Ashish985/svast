@@ -12,6 +12,22 @@ class Admin_model extends CI_Model{
 			return false;
 		}
    }
+   
+   public function get_mngrId($table) 
+   { 
+     $this->db->select("*");    
+     $this->db->group_by('manager');
+     $query = $this->db->get($table);
+     return $query->result();
+   }
+
+   public function get_agentId($table) 
+   { 
+     $this->db->select("*");    
+     $this->db->group_by('agent'); 
+     $query = $this->db->get($table);
+     return $query->result();
+   }
 
    public function get_clients($table) 
     { 
@@ -118,7 +134,7 @@ class Admin_model extends CI_Model{
           // Check so incoming data is actually an array and not empty
     if (is_array($is_data) && ! empty($is_data))
     {
-      $this->db->update_batch('tbl_clients', $is_data, 'id');
+      $this->db->update_batch('tbl_output', $is_data, 'id');
       return array(
          'status' => 'success',
          'message' => 'record has been updated',
@@ -164,6 +180,26 @@ class Admin_model extends CI_Model{
    public function get_count($table){
       $this->db->select('COUNT(*) as count');
       $this->db->from($table);
+      $query = $this->db->get();
+      return $query->result();
+   }
+
+   public function get_where($table, $field, $data){
+      $this->db->select('*');
+      $this->db->from('agent_claim');
+      // $this->db->from($table);
+      $this->db->join('tbl_output', 'tbl_output.id = agent_claim.claim_id');
+      $this->db->where($field, $data);
+      $query = $this->db->get();
+      return $query->result();
+    }
+
+    public function get_where2($table, $field, $data){
+      $this->db->select('*');
+      $this->db->from('manager_agent');
+      // $this->db->from($table);
+      $this->db->join('tbl_users', 'tbl_users.id = manager_agent.agent');
+      $this->db->where($field, $data);
       $query = $this->db->get();
       return $query->result();
     }
