@@ -37,7 +37,7 @@ class Admin_model extends CI_Model{
       // print_r($query->result());
       // die();
       return $query->result();
-    }
+    } 
 
     public function get_clients_temp($table) 
     { 
@@ -234,7 +234,47 @@ class Admin_model extends CI_Model{
       $query = $this->db->get();
       return $query->result();
     }
+    public function get_where_temp_agent($table, $field, $data){
+      $this->db->select('*');
+      $this->db->from($table);
+      $this->db->join('tbl_users', 'tbl_users.id = manager_agent.agent');
+      $this->db->where($field, $data->id);
+      $query = $this->db->get();
+      return $query->result();
+    }
+    public function get_where_temp_client($table, $field, $data){
+      $this->db->select('*');
+      $this->db->from($table);
+      // if($data->client)
+      $this->db->join('tbl_clients', 'tbl_clients.id = manager_agent.client');
+      $this->db->where($field, $data->id);
+      $query = $this->db->get();
+      return $query->result();
+    }
  
+
+    public function get_all_data($table) 
+   { 
+     $this->db->select("*");
+     $this->db->from($table);
+     $query = $this->db->get();
+     return $query->result();
+   }
+
+   public function delete_where($table,$field, $data) 
+   {
+      
+       
+         $this->db->where('manager', $data['manager_id']);
+         $this->db->where($field, $data[$field]);
+         $this->db->delete($table);
+         
+         return array(
+            'status' => 'success',
+            'message' => 'record has been deleted',
+        );
+     
+   }
 
 
 }

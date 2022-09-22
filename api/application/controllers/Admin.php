@@ -187,15 +187,15 @@ class Admin extends CI_Controller{
     }              
   }
   
-    //delete output file data by id
-    public function outputfileDelete()
-    {  
-      $data = json_decode(file_get_contents("php://input"));
-      $id = $data->id;
-      $is_del = $this->Admin_model->outputfileDeletedById('tbl_output', $id);
-  
-      echo json_encode($is_del);
-    }
+  //delete output file data by id
+  public function outputfileDelete()
+  {  
+    $data = json_decode(file_get_contents("php://input"));
+    $id = $data->id;
+    $is_del = $this->Admin_model->outputfileDeletedById('tbl_output', $id);
+
+    echo json_encode($is_del);
+  }
     
 
       // delete multiple data from excel file 
@@ -224,6 +224,7 @@ class Admin extends CI_Controller{
 
   }
 
+   //create new clients
   public function createClient()
 	{
 	  $is_featured = $this->input->post('avatar');
@@ -285,64 +286,10 @@ class Admin extends CI_Controller{
 				->set_status_header(200)
 				->set_content_type('application/json')
 				->set_output(json_encode($response)); 
-		}
-	
-
-  public function createPMS()
-	{
-	  $is_featured = $this->input->post('avatar');
-	  $name = $this->input->post('name');
-    $filename = NULL;
-    $isUploadError = FALSE;
-
-			// if ($_FILES && $_FILES['avatar']['name']) {
-        if (true) {
-        
-				$config['upload_path']          = './assets/clientimage/';
-	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
-	            $config['max_size']             = 50000;
-
-	            $this->load->library('upload', $config);
-	            if ( ! $this->upload->do_upload('avatar')) {
-
-	            	$isUploadError = TRUE;
-
-					$response = array(
-						'status' => 'error',
-						'message' => $this->upload->display_errors()
-					);
-	            }
-	            else {
-	            	$uploadData = $this->upload->data();
-            		$filename = $uploadData['file_name'];
-	            }
-			}
-
-			if( ! $isUploadError) {
-	        	$blogData = array(
-					 
-					'image' => $filename,
-          'name' => $name
-			 
-				);
-
-				$id = $this->Admin_model->create('tbl_pms',$blogData);
-
-				$response = array(
-					'status' => 'success',
-          'data'=>$blogData
-				);
-			}
-
-			$this->output
-				->set_status_header(200)
-				->set_content_type('application/json')
-				->set_output(json_encode($response)); 
-		}
-	
+	}
 
   
-  //create new clients
+  //check clients data
   public function client()
 	{ 
     
@@ -405,47 +352,132 @@ class Admin extends CI_Controller{
   }
   
    // update clients data by id
-  public function updateClient($id)
-	{ 
+  public function updateClient()
+	{   
+    $is_featured = $this->input->post('avatar');
+	  $name = $this->input->post('name');
+	  $id = $this->input->post('id');
+    $pmsId = $this->input->post('pms_id');
+
+    $dbimg = $this->Admin_model->outputfileGet('tbl_clients',$id);
+		$img=$dbimg[0];
+    $img_file= $img->image;
     
-    $data = json_decode(file_get_contents("php://input"));
-  
-    if (isset($data->name)) {
+   
+    $isUploadError = FALSE;
+
+			if ($_FILES && $_FILES['avatar']['name']) {
        
-       $data = array(
-        "name" => $data->name
-        
-       );
-       $res=$this->Admin_model->outputfileEdit('tbl_clients', $id, $data);  
-        
-       if ($res) {
- 
-        $arr = array(
-          'status' => "success",
-          'message' => 'Record updated successfully',
-        );
-        echo json_encode($arr);
-       } else {
+				      $config['upload_path']          = './assets/clientimage/';
+	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
+	            $config['max_size']             = 50000;
 
-         $arr = array(
-          'status' => "error",
-          'message' => 'Failed to update ',
-         );
-        echo json_encode($arr);
-       }
-    } else {
+	            $this->load->library('upload', $config);
+	            if ( ! $this->upload->do_upload('avatar')) {
 
-        $arr = array(
-         'status' => "error",
-         'message' => 'All fields are needed',
-        );
-        echo json_encode($arr);
-    }              
+	            	$isUploadError = TRUE;
+
+					$response = array(
+						'status' => 'error',
+						'message' => $this->upload->display_errors()
+					);
+	            }
+	            else {
+	   
+					if($img_file && file_exists(FCPATH.'./assets/clientimage/'.$img_file))
+					{
+						unlink(FCPATH.'./assets/clientimage/'.$img_file);
+					}
+
+	            	$uploadData = $this->upload->data();
+            		$filename = $uploadData['file_name'];
+	            }
+			}
+
+			if( ! $isUploadError) {
+	        	$data = array(
+			 
+					'name' => $name,
+					'image' => $filename,
+          'pms_id' => $pmsId
+					 
+				);
+
+				if($this->Admin_model->outputfileEdit('tbl_clients',$id, $data)){
+          $arr = array(
+            'status' => "success",
+            'message' => 'Record updated successfully',
+          );
+          echo json_encode($arr);
+        }
+        else{
+          $arr = array(
+            'status' => "error",
+            'message' => 'Failed to update',
+          );
+          echo json_encode($arr);
+        }
+				 
+      }
+
   }
 
+  //create new PMS 
+  public function createPMS()
+	{
+	  $is_featured = $this->input->post('avatar');
+	  $name = $this->input->post('name');
+    $filename = NULL;
+    $isUploadError = FALSE;
+
+			// if ($_FILES && $_FILES['avatar']['name']) {
+        if (true) {
+        
+				$config['upload_path']          = './assets/clientimage/';
+	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
+	            $config['max_size']             = 50000;
+
+	            $this->load->library('upload', $config);
+	            if ( ! $this->upload->do_upload('avatar')) {
+
+	            	$isUploadError = TRUE;
+
+					$response = array(
+						'status' => 'error',
+						'message' => $this->upload->display_errors()
+					);
+	            }
+	            else {
+	            	$uploadData = $this->upload->data();
+            		$filename = $uploadData['file_name'];
+	            }
+			}
+
+			if( ! $isUploadError) {
+	        	$blogData = array(
+					 
+					'image' => $filename,
+          'name' => $name
+			 
+				);
+
+				$id = $this->Admin_model->create('tbl_pms',$blogData);
+
+				$response = array(
+					'status' => 'success',
+          'data'=>$blogData
+				);
+			}
+
+			$this->output
+				->set_status_header(200)
+				->set_content_type('application/json')
+				->set_output(json_encode($response)); 
+	}
+
   //get all pms
-    public function GetPMS()
-    { 
+  public function GetPMS()
+  { 
       $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
       $data = array();
 
@@ -475,9 +507,9 @@ class Admin extends CI_Controller{
         echo json_encode($arr);
       }
         
-    }
+  }
 
-  //delete client data by id
+  //delete PMS data by id
   public function deletePMS()
 	{  
     $data = json_decode(file_get_contents("php://input"));
@@ -487,43 +519,72 @@ class Admin extends CI_Controller{
     echo json_encode($is_del);
   }
   
-   // update output file data by id
-  public function updatePMS($id)
+  // update PMS  data by id
+  public function updatePMS()
 	{ 
+    $is_featured = $this->input->post('avatar');
+	  $name = $this->input->post('name');
+	  $id = $this->input->post('id');
+
+    $dbimg = $this->Admin_model->outputfileGet('tbl_pms',$id);
+		$img=$dbimg[0];
+    $img_file= $img->image;
     
-    $data = json_decode(file_get_contents("php://input"));
-  
-    if (isset($data->name)) {
+   
+    $isUploadError = FALSE;
+
+			if ($_FILES && $_FILES['avatar']['name']) {
        
-       $data = array(
-        "name" => $data->name
-        
-       );
-       $res=$this->Admin_model->outputfileEdit('tbl_pms', $id, $data);  
-        
-       if ($res) {
- 
-        $arr = array(
-          'status' => "success",
-          'message' => 'Record updated successfully',
-        );
-        echo json_encode($arr);
-       } else {
+				      $config['upload_path']          = './assets/clientimage/';
+	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
+	            $config['max_size']             = 50000;
 
-         $arr = array(
-          'status' => "error",
-          'message' => 'Failed to update ',
-         );
-        echo json_encode($arr);
-       }
-    } else {
+	            $this->load->library('upload', $config);
+	            if ( ! $this->upload->do_upload('avatar')) {
 
-        $arr = array(
-         'status' => "error",
-         'message' => 'All fields are needed',
-        );
-        echo json_encode($arr);
-    }              
+	            	$isUploadError = TRUE;
+
+					$response = array(
+						'status' => 'error',
+						'message' => $this->upload->display_errors()
+					);
+	            }
+	            else {
+	   
+					if($img_file && file_exists(FCPATH.'./assets/clientimage/'.$img_file))
+					{
+						unlink(FCPATH.'./assets/clientimage/'.$img_file);
+					}
+
+	            	$uploadData = $this->upload->data();
+            		$filename = $uploadData['file_name'];
+	            }
+			}
+
+			if( ! $isUploadError) {
+	        	$data = array(
+			 
+					'name' => $name,
+					'image' => $filename
+					 
+				);
+
+				if($this->Admin_model->outputfileEdit('tbl_pms',$id, $data)){
+          $arr = array(
+            'status' => "success",
+            'message' => 'Record updated successfully',
+          );
+          echo json_encode($arr);
+        }
+        else{
+          $arr = array(
+            'status' => "error",
+            'message' => 'Failed to update',
+          );
+          echo json_encode($arr);
+        }
+				 
+      }      
   }
 
 
@@ -556,7 +617,10 @@ class Admin extends CI_Controller{
     $data = $this->input->post();
     $arrs = array();
     foreach ($data['agents'] as $agent) {
-      array_push($arrs,array('manager' => $data['manager'], 'agent' => $agent));
+      array_push($arrs,array('manager' => $data['manager'], 'agent' => $agent, 'client' => null));
+    }
+    foreach ($data['clients'] as $client) {
+      array_push($arrs,array('manager' => $data['manager'], 'client' => $client, 'agent' => null));
     }
     $this->Admin_model->insert_data('manager_agent',$arrs);
 
@@ -632,7 +696,7 @@ class Admin extends CI_Controller{
         // $verification_json = $jwt->jsonEncode($verification);
         // return $verification_json;
 
-    }
+  }
 
   public function authUserToken($roleArr)
     {
@@ -674,9 +738,9 @@ class Admin extends CI_Controller{
             //if auth key not in header then return
             return false;
         }
-    } 
+  }  
 
-   public function getMappedAgent(){
+  public function getMappedAgent(){
     $manager = $this->Admin_model->get_mngrId('manager_agent');
     $agent = $this->Admin_model->get_agentId('manager_agent');
   
@@ -692,7 +756,7 @@ class Admin extends CI_Controller{
     // $this->db->where('tbl_users.id',8); // Set Filter
     // $this->db->where_in('tbl_users.id');
     $res = $this->db->get();
-    print_r($res->result());
+    echo json_encode($res->result());
 
   }
 
@@ -717,11 +781,68 @@ class Admin extends CI_Controller{
      echo json_encode($arr);
   }
 
+  public function MATempMap(){
+    $managers = $this->Admin_model->get_data('tbl_users', 2);
+    $agents = $this->Admin_model->get_data('tbl_users', 3);
+    $clients = $this->Admin_model->get_all_data('tbl_clients');
+    $data_arr =  $this->Admin_model->get_where_temp('tbl_users', 'role', '2');
+    // 
+    // $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
+      $data = array();
 
- 
- 
+      foreach ($data_arr as $map) { 
+        array_push($data,  array(
+          "id"=> $map->id,
+          "name"=> $map->name,
+          "agent"=> $this->Admin_model->get_where_temp_agent('manager_agent', 'manager', $map),
+          "client"=> $this->Admin_model->get_where_temp_client('manager_agent', 'manager', $map)
+        ));
+      }
+    // 
+
+    $data = array(
+      'managers' => $managers,
+      'agents' => $agents,
+      'clients' => $clients,
+      'mapping' => $data,
+    );
+    $arr = array(
+      'status' => "success",
+      'message' => 'Assigned Successfully',
+      'data' => $data
+     );
+     echo json_encode($arr);
+  }
+
+  public function DelMATempMap(){
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $data = $this->input->post();
+
+    $manager_id = $data['manager_id'];
+    $client_id = $data['client_id'];
+    $agent_id = $data['agent_id'];
+
+    
+
+    if($agent_id != "null"){
+      $data = array(
+        "agent" => $agent_id,
+        "manager_id" =>$manager_id
+      );
+      $result =  $this->Admin_model->delete_where('manager_agent', 'agent', $data);
+    }
+    if($client_id != "null"){
+      $data = array(
+        "client" => $client_id,
+        "manager_id" =>$manager_id
+      );
+      $result =  $this->Admin_model->delete_where('manager_agent', 'client', $data);
+      
+    }
+
+     echo json_encode($result);
+  }
 
 }
-
 
 ?>

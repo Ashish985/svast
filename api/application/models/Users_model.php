@@ -87,16 +87,16 @@ class Users_model extends CI_Model
       else{
       return false;
       }
-    }
+    } 
 
     public function get_userById($table,$id){
-
-        $this->db->select("*");
-        $this->db->from($table);
-        $this->db->where("id", $id);
-        $query = $this->db->get();
-    
-        return $query->result();
+        
+      $this->db->select("*");
+      $this->db->from($table);
+      $this->db->where("id", $id);
+      $query = $this->db->get();
+  
+      return $query->result();
     }
 
   
