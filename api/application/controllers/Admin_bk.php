@@ -228,7 +228,7 @@ class Admin extends CI_Controller{
 	{
 	  $is_featured = $this->input->post('avatar');
 	  $name = $this->input->post('name');
-	  $pmsId = $this->input->post('pms_id');
+    $pmsId = $this->input->post('pms_id');
     $filename = NULL;
     $isUploadError = FALSE;
 
@@ -258,22 +258,13 @@ class Admin extends CI_Controller{
 			if( ! $isUploadError) {
 	        	$blogData = array(
 					 
-					'image' => $filename,
-          'name' => $name,
-          'pms_id' => $pmsId,
-          
+					'image'  => $filename,
+          'name'   => $name,
+          'pms_id' => $pmsId
 			 
 				);
 
-				$id1 = $this->Admin_model->create('tbl_clients',$blogData);
-				// $id2 = $this->Admin_model->create('pms_client_map',array(
-					 
-				// 	'pms_id' => $pmsId,
-        //   'client_id' => $id1,
-          
-			 
-				// ));
-        
+				$id = $this->Admin_model->create('tbl_clients',$blogData);
 
 				$response = array(
 					'status' => 'success',
@@ -288,59 +279,7 @@ class Admin extends CI_Controller{
 		}
 	
 
-  public function createPMS()
-	{
-	  $is_featured = $this->input->post('avatar');
-	  $name = $this->input->post('name');
-    $filename = NULL;
-    $isUploadError = FALSE;
-
-			// if ($_FILES && $_FILES['avatar']['name']) {
-        if (true) {
-        
-				$config['upload_path']          = './assets/clientimage/';
-	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
-	            $config['max_size']             = 50000;
-
-	            $this->load->library('upload', $config);
-	            if ( ! $this->upload->do_upload('avatar')) {
-
-	            	$isUploadError = TRUE;
-
-					$response = array(
-						'status' => 'error',
-						'message' => $this->upload->display_errors()
-					);
-	            }
-	            else {
-	            	$uploadData = $this->upload->data();
-            		$filename = $uploadData['file_name'];
-	            }
-			}
-
-			if( ! $isUploadError) {
-	        	$blogData = array(
-					 
-					'image' => $filename,
-          'name' => $name
-			 
-				);
-
-				$id = $this->Admin_model->create('tbl_pms',$blogData);
-
-				$response = array(
-					'status' => 'success',
-          'data'=>$blogData
-				);
-			}
-
-			$this->output
-				->set_status_header(200)
-				->set_content_type('application/json')
-				->set_output(json_encode($response)); 
-		}
-	
-
+  
   
   //create new clients
   public function client()
@@ -375,7 +314,7 @@ class Admin extends CI_Controller{
   //get all client
   public function clients()
 	{ 
-    $data_arr = $this->Admin_model->get_clients_temp('tbl_clients');
+    $data_arr = $this->Admin_model->get_clients('tbl_clients');
       // print_r($data_arr);
     if ($data_arr) {
       $arr = array(
@@ -443,27 +382,70 @@ class Admin extends CI_Controller{
     }              
   }
 
-  //get all pms
+  // create pms systems
+  public function createPMS()
+	{
+	  $is_featured = $this->input->post('avatar');
+	  $name = $this->input->post('name');
+    $filename = NULL;
+    $isUploadError = FALSE;
+
+			// if ($_FILES && $_FILES['avatar']['name']) {
+        if (true) {
+        
+				$config['upload_path']          = './assets/clientimage/';
+	            $config['allowed_types']        = 'gif|jpg|png|jpeg';
+	            $config['max_size']             = 500000;
+
+	            $this->load->library('upload', $config);
+	            if ( ! $this->upload->do_upload('avatar')) {
+
+	            	$isUploadError = TRUE;
+
+					$response = array(
+						'status' => 'error',
+						'message' => $this->upload->display_errors()
+					);
+	            }
+	            else {
+	            	$uploadData = $this->upload->data();
+            		$filename = $uploadData['file_name'];
+	            }
+			}
+
+			if( ! $isUploadError) {
+	        	$blogData = array(
+					 
+					'image' => $filename,
+          'name' => $name
+			 
+				);
+
+				$id = $this->Admin_model->create('tbl_pms',$blogData);
+
+				$response = array(
+					'status' => 'success',
+          'data'=>$blogData
+				);
+			}
+
+			$this->output
+				->set_status_header(200)
+				->set_content_type('application/json')
+				->set_output(json_encode($response)); 
+		}
+	
+
+
+    //get all pms
     public function GetPMS()
     { 
-      $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
-      $data = array();
-
-      foreach ($data_arr as $map) { 
-        array_push($data,  array(
-          "id"=> $map->id,
-          "image"=> $map->image,
-          "name"=> $map->name,
-          "created_date"=> $map->created_date,
-          "clients"=> $this->Admin_model->get_where_temp('tbl_clients', 'pms_id', $map->id)
-        ));
-      }
-
+      $data_arr = $this->Admin_model->get_clients('tbl_pms');
         // print_r($data_arr);
       if ($data_arr) {
         $arr = array(
           'status' => 'success',
-          'data'=> $data
+          'data'=> $data_arr
         );
         echo json_encode($arr);
       }
@@ -477,7 +459,7 @@ class Admin extends CI_Controller{
         
     }
 
-  //delete client data by id
+  //delete pms data by id
   public function deletePMS()
 	{  
     $data = json_decode(file_get_contents("php://input"));
@@ -554,10 +536,16 @@ class Admin extends CI_Controller{
   public function AssignManagerAgent(){
     $_POST = json_decode(file_get_contents('php://input'), true);
     $data = $this->input->post();
+    // print_r($data);
+    
     $arrs = array();
-    foreach ($data['agents'] as $agent) {
+    foreach ($data['agents'] as $agent ) {
       array_push($arrs,array('manager' => $data['manager'], 'agent' => $agent));
     }
+    foreach ($data['clients'] as $client) {
+      array_push($arrs,array('manager' => $data['manager'], 'client' => $client));
+    }
+
     $this->Admin_model->insert_data('manager_agent',$arrs);
 
     $arr = array(
@@ -676,7 +664,7 @@ class Admin extends CI_Controller{
         }
     } 
 
-   public function getMappedAgent(){
+  public function getMappedAgent(){
     $manager = $this->Admin_model->get_mngrId('manager_agent');
     $agent = $this->Admin_model->get_agentId('manager_agent');
   

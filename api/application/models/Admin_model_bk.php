@@ -39,28 +39,6 @@ class Admin_model extends CI_Model{
       return $query->result();
     }
 
-    public function get_clients_temp($table) 
-    { 
-      $this->db->select("tbl_clients.id,tbl_clients.image,tbl_clients.name,tbl_clients.created_date, tbl_pms.name as pms_name");    
-      // $this->db->order_by("created_date", "desc");
-      $this->db->from('tbl_clients');
-      $this->db->join('tbl_pms', 'tbl_pms.id = tbl_clients.pms_id');
-      $query = $this->db->get();
-      // print_r($query->result());
-      // die();
-      return $query->result();
-    }
-
-    public function get_clients_pms_temp($table) 
-    { 
-      $this->db->select("*");    
-      // $this->db->order_by("created_date", "desc");
-      $query = $this->db->get($table);
-      // print_r($query->result());
-      // die();
-      return $query->result();
-    }
-
    public function getCount($table){
 	return $this->db->count_all_results('tbl_output');
    }
@@ -81,8 +59,7 @@ class Admin_model extends CI_Model{
 
    public function create($table,$data){
 
-      $this->db->insert($table, $data);
-      return $this->db->insert_id();
+      return $this->db->insert($table, $data);
    }
 
    public function getOutputData($skip, $limit) 
@@ -224,17 +201,9 @@ class Admin_model extends CI_Model{
       $this->db->join('tbl_users', 'tbl_users.id = manager_agent.agent');
       $this->db->where($field, $data);
       $query = $this->db->get();
-      return $query->result_array();
-    }
-
-    public function get_where_temp($table, $field, $data){
-      $this->db->select('*');
-      $this->db->from($table);
-      $this->db->where($field, $data);
-      $query = $this->db->get();
       return $query->result();
     }
- 
+
 
 
 }
