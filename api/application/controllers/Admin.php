@@ -227,7 +227,7 @@ class Admin extends CI_Controller{
    //create new clients
   public function createClient()
 	{
-	  $is_featured = $this->input->post('avatar');
+	  
 	  $name = $this->input->post('name');
 	  $pmsId = $this->input->post('pms_id');
     $filename = NULL;
@@ -354,7 +354,7 @@ class Admin extends CI_Controller{
    // update clients data by id
   public function updateClient()
 	{   
-    $is_featured = $this->input->post('avatar');
+   
 	  $name = $this->input->post('name');
 	  $id = $this->input->post('id');
     $pmsId = $this->input->post('pms_id');
@@ -363,7 +363,6 @@ class Admin extends CI_Controller{
 		$img=$dbimg[0];
     $img_file= $img->image;
     
-   
     $isUploadError = FALSE;
 
 			if ($_FILES && $_FILES['avatar']['name']) {
@@ -425,7 +424,7 @@ class Admin extends CI_Controller{
   //create new PMS 
   public function createPMS()
 	{
-	  $is_featured = $this->input->post('avatar');
+	  
 	  $name = $this->input->post('name');
     $filename = NULL;
     $isUploadError = FALSE;
@@ -522,7 +521,7 @@ class Admin extends CI_Controller{
   // update PMS  data by id
   public function updatePMS()
 	{ 
-    $is_featured = $this->input->post('avatar');
+  
 	  $name = $this->input->post('name');
 	  $id = $this->input->post('id');
 
@@ -752,7 +751,8 @@ class Admin extends CI_Controller{
     $this->db->select("name,email,manager,agent"); // Select field
     $this->db->from('tbl_users'); // from Table1
     $this->db->join('manager_agent','tbl_users.id = manager_agent.manager','INNER'); // Join table1 with table2 based on the foreign key
-    $this->db->group_by('manager_agent.manager'); // Set Filter
+    $this->db->group_by('manager_agent.manager'); 
+    // Set Filter
     // $this->db->where('tbl_users.id',8); // Set Filter
     // $this->db->where_in('tbl_users.id');
     $res = $this->db->get();
@@ -786,6 +786,7 @@ class Admin extends CI_Controller{
     $agents = $this->Admin_model->get_data('tbl_users', 3);
     $clients = $this->Admin_model->get_all_data('tbl_clients');
     $data_arr =  $this->Admin_model->get_where_temp('tbl_users', 'role', '2');
+ 
     // 
     // $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
       $data = array();
@@ -799,7 +800,7 @@ class Admin extends CI_Controller{
         ));
       }
     // 
-
+    
     $data = array(
       'managers' => $managers,
       'agents' => $agents,
@@ -807,8 +808,7 @@ class Admin extends CI_Controller{
       'mapping' => $data,
     );
     $arr = array(
-      'status' => "success",
-      'message' => 'Assigned Successfully',
+     
       'data' => $data
      );
      echo json_encode($arr);
@@ -842,6 +842,38 @@ class Admin extends CI_Controller{
 
      echo json_encode($result);
   }
+
+
+  public function PostOutputColumns(){
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $data = $this->input->post();
+    $arrs = array();
+
+    $id=$data['pms_id'];
+
+    foreach ($data['mapValues'] as $val) {
+      
+      array_push($arrs,array('name'=>$val['pms_col_name'],'map_col_id' => $val['output_col_id'], 'pms_id' => $id));
+
+    }
+    $this->Admin_model->insert_data('pms_system_cols',$arrs);
+
+    $arr = array(
+      'status' => "success",
+      'message' => 'Assigned Successfully',
+     );
+     echo json_encode($arr);
+  }
+  
+  public function GetOutputColumns(){
+    $data = $this->Admin_model->get_all_data('output_file_cols');
+    echo json_encode(array(
+      "status" => 'success',
+      "message" => 'OK',
+      'data' => $data
+    ));
+  }
+
 
 }
 

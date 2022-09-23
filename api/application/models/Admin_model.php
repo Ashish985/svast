@@ -235,6 +235,7 @@ class Admin_model extends CI_Model{
       return $query->result();
     }
     public function get_where_temp_agent($table, $field, $data){
+
       $this->db->select('*');
       $this->db->from($table);
       $this->db->join('tbl_users', 'tbl_users.id = manager_agent.agent');
@@ -253,7 +254,7 @@ class Admin_model extends CI_Model{
     }
  
 
-    public function get_all_data($table) 
+   public function get_all_data($table) 
    { 
      $this->db->select("*");
      $this->db->from($table);
@@ -265,14 +266,14 @@ class Admin_model extends CI_Model{
    {
       
        
-         $this->db->where('manager', $data['manager_id']);
-         $this->db->where($field, $data[$field]);
-         $this->db->delete($table);
-         
-         return array(
-            'status' => 'success',
-            'message' => 'record has been deleted',
-        );
+     $this->db->where('manager', $data['manager_id']);
+     $this->db->where($field, $data[$field]);
+     $this->db->delete($table);
+     
+     return array(
+        'status' => 'success',
+        'message' => 'record has been deleted',
+     );
      
    }
 
