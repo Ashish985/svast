@@ -65,6 +65,13 @@ class Admin_model extends CI_Model{
 	return $this->db->count_all_results('tbl_output');
    }
 
+   public function getCountPms($table,$id){
+      $where = "pms_id='Joe' AND status='boss' OR status='active'";
+      $this->db->where('pms_id',$id);
+      $query = $this->db->get($table);
+      return $query->num_rows();
+   }
+
    public function check_client($table,$name){
      
      $this->db->select('*');
@@ -276,6 +283,33 @@ class Admin_model extends CI_Model{
      );
      
    }
+
+
+   public function delete_where_id($table,$field, $id) 
+   {
+      
+         $this->db->where($field, $id);
+         $this->db->delete($table);
+   }
+   
+   public function get_whereJ_SF($table, $field, $data, $fields){
+      $where = "pms_id='$data' AND map_col_id is NOT NULL";
+      $this->db->select($fields);
+      $this->db->from($table);
+      $this->db->where($where);
+      $query = $this->db->get();
+      return $query->result();
+    }
+
+    public function get_where_SF($table, $field, $data, $fields){
+      $this->db->select($fields);
+      $this->db->from($table);
+      $this->db->where($field, $data);
+      $query = $this->db->get();
+      return $query->result();
+    }
+
+   
 
 
 }

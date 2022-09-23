@@ -474,38 +474,56 @@ class Admin extends CI_Controller{
 				->set_output(json_encode($response)); 
 	}
 
+
+  private function mappingStatus($id){
+    $totalOutputCols = $this->Admin_model->getCount('output_file_cols');
+    $map_count = $this->Admin_model->get_whereJ_SF('pms_system_cols', 'pms_id', $id, 'id, name as pms_col_name, map_col_id as output_col_id');
+    // return $totalOutputCols;
+    if(count($map_count) == 0){
+      return 'Not Mapped';
+    }else if(count($map_count) == $totalOutputCols){
+      return 'Mapped';
+    }else{
+      return 'Partially Mapped';
+    }
+
+  }
+
   //get all pms
   public function GetPMS()
   { 
-      $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
-      $data = array();
+    $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
 
-      foreach ($data_arr as $map) { 
-        array_push($data,  array(
-          "id"=> $map->id,
-          "image"=> $map->image,
-          "name"=> $map->name,
-          "created_date"=> $map->created_date,
-          "clients"=> $this->Admin_model->get_where_temp('tbl_clients', 'pms_id', $map->id)
-        ));
-      }
+    $data = array();
 
-        // print_r($data_arr);
-      if ($data_arr) {
-        $arr = array(
-          'status' => 'success',
-          'data'=> $data
-        );
-        echo json_encode($arr);
-      }
-      else{
-        $arr = array(
-          'status' => 'error',
-          'message'=> 'error'
-        );
-        echo json_encode($arr);
-      }
-        
+    
+    foreach ($data_arr as $map) { 
+      array_push($data,  array(      
+        "id"=> $map->id,
+        "image"=> $map->image,
+        "name"=> $map->name,
+        "created_date"=> $map->created_date,
+        "clients"=> $this->Admin_model->get_where_temp('tbl_clients', 'pms_id', $map->id),
+        "cols" => $this->Admin_model->get_where_SF('pms_system_cols', 'pms_id', $map->id, 'id, name as pms_col_name, map_col_id as output_col_id'),
+        "mapping_status" => $this->mappingStatus($map->id)
+      ));
+    }
+      // print_r($data_arr);
+    if ($data_arr) {
+      $arr = array(
+        'status' => 'success',
+        'data'=> $data
+      );
+      echo json_encode($arr);
+    }
+    else{
+      $arr = array(
+        'status' => 'error',
+        'message'=> 'error'
+      );
+      echo json_encode($arr);
+    }
+      
   }
 
   //delete PMS data by id
@@ -850,6 +868,9 @@ class Admin extends CI_Controller{
     $arrs = array();
 
     $id=$data['pms_id'];
+    
+    $this->Admin_model->delete_where_id('pms_system_cols', 'pms_id', $id);
+
 
     foreach ($data['mapValues'] as $val) {
       
