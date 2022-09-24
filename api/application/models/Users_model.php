@@ -20,7 +20,7 @@ class Users_model extends CI_Model
         } else {
             return false;
         }
-    }  
+    }   
 
     public function getResetTokenData($table='',$where='')
     {
@@ -45,7 +45,7 @@ class Users_model extends CI_Model
       if ($query->num_rows() > 0){
          return true;
       }
-      else{
+      else{ 
          return false;
       }
    }
@@ -73,11 +73,33 @@ class Users_model extends CI_Model
         return $query->result_array()[0];
     }
 
-    public function delete($table,$id){
+    public function delete_old($table,$id){
    
         $this->db->delete($table, ['id' => $id]);
         return $this->db->affected_rows();
     }
+
+   
+
+   //delete users data by id 
+   public function delete($table,$id) 
+   {
+      
+      if($this->is_record_exists($table, $id) == true){
+         $this->db->where('id', $id);
+         $this->db->delete($table);
+         return array(
+            'status' => 'success',
+            'message' => 'record has been deleted',
+        );
+      }
+      else{
+         return array(
+            'status' => 'error',
+            'message' => 'id not exist!',
+        );
+      }
+   }
 
     public function update($table,$user_id, $user_info){
      if($this->is_record_exists($table, $user_id,$user_info) == true){

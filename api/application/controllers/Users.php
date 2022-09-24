@@ -398,29 +398,16 @@ class Users extends CI_Controller
         }
     }
 
-    public function delete($id)
+    public function delete()
     {
-        // delete data method
         $data = json_decode(file_get_contents("php://input"));
-
-        if ($this->Users_model->delete('tbl_users', $id)) {
-            // retruns true
-
-            $arr = array(
-                'status' => 'success',
-                'message' => 'User has been deleted',
-            );
-            echo json_encode($arr);
-        } else {
-            // return false
-            $arr = array(
-                'status' => 'error',
-                'message' => 'User id not exist!',
-            );
-            echo json_encode($arr);
-        }
+        $id = $data->id;
+        
+        $is_del = $this->Users_model->delete('tbl_users', $id);
+    
+        echo json_encode($is_del); 
     }
-
+    
     public function changePassword()
     {
      

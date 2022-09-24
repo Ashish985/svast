@@ -352,11 +352,11 @@ class Admin extends CI_Controller{
   }
   
    // update clients data by id
-  public function updateClient()
+  public function updateClient($id)
 	{   
    
 	  $name = $this->input->post('name');
-	  $id = $this->input->post('id');
+	  // $id = $this->input->post('id');
     $pmsId = $this->input->post('pms_id');
 
     $dbimg = $this->Admin_model->outputfileGet('tbl_clients',$id);
@@ -826,7 +826,9 @@ class Admin extends CI_Controller{
       'mapping' => $data,
     );
     $arr = array(
-     
+
+      'status' => "success",
+      'message' => 'Assigned Successfully',
       'data' => $data
      );
      echo json_encode($arr);
