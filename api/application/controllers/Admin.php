@@ -75,6 +75,7 @@ class Admin extends CI_Controller{
               
               'pms_id'=> $pms_id,
               'Name'=>$user['id'],
+              "assigned_to"=> NULL
             );
             $id = $this->Admin_model->insertFileData('tbl_output',$subscribers_data);
             // echo date($service_date);
@@ -160,6 +161,8 @@ class Admin extends CI_Controller{
       }
       $data_arr = $this->Admin_model->getOutputData($skip, $row_limit);
 
+      $mDataArr = $this->Admin_model->mgetOutputData($data_arr);
+
       $arr = array(
         'status' => 'success',
         'first_page' => $first_page,
@@ -167,7 +170,7 @@ class Admin extends CI_Controller{
         'total_pages' =>  $total_pages,
         'current_page' => $page,
         'total_records' => $total_records,
-        'data'=> $data_arr,
+        'data'=> $mDataArr,
       );
       echo json_encode($arr);
     }
@@ -710,9 +713,12 @@ class Admin extends CI_Controller{
     $data = $this->input->post();
     $arrs = array();
     foreach ($data['claims'] as $claim) {
-      array_push($arrs,array('agent' => $data['agent'], 'claim_id' => $claim));
+      array_push($arrs,array('assigned_to' => $data['agent'], 'id' => $claim));
     }
-    $this->Admin_model->insert_data('agent_claim',$arrs);
+
+    foreach($arrs as $row){
+      $this->Admin_model->update_table2('tbl_output',$row);
+    }
 
     $arr = array(
       'status' => "success",
@@ -724,7 +730,7 @@ class Admin extends CI_Controller{
   public function GetAssignClaimsAgent($page, $row_limit){
     $user = $this->authUserToken([3]);
     if($user){
-      $data = $this->Admin_model->get_where('agent_claim','agent', $user['id']);
+      $data = $this->Admin_model->get_where('tbl_output','assigned_to', $user['id']);
   
       $arr = array(
         'status' => "success",
@@ -960,6 +966,19 @@ class Admin extends CI_Controller{
       "message" => 'OK',
       'data' => $data,
       'total_records' => count($data)
+    ));
+  }
+
+  public function unAssignAgent(){
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $data = $this->input->post();
+    // $id = $data['id'];
+    // $assign_id = $data['assign_id'];
+
+    $data = $this->Admin_model->update_table('tbl_output', 'assigned_to', $data);
+    echo json_encode(array(
+      "status" => 'success',
+      "message" => $data
     ));
   }
 

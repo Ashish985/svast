@@ -94,10 +94,37 @@ class Admin_model extends CI_Model{
 
    public function getOutputData($skip, $limit) 
    {
+      // $this->db->select('*');
+      // $this->db->from('tbl_output');
+      // $this->db->join('tbl_users', 'tbl_users.id = tbl_output.Name');
       $this->db->order_by("inserted_date", "desc");
       $query = $this->db->get('tbl_output', $limit, $skip);
-	// print_r($query->result_array());
-	return $query->result_array();
+      // print_r($query->result_array());
+      return $query->result_array();
+   }
+
+   public function mgetOutputData($arr) 
+   {
+     $new_arr = array();
+     foreach ($arr as $row) {
+      array_push($new_arr, array(
+        "data"=> $row,
+        "user" => $this->get_all_byID('tbl_users', $row['Name']),
+        "pms" => $this->get_all_byID('tbl_pms', $row['pms_id']),
+        "assigned_to" => $row['assigned_to'] ? $this->get_all_byID('tbl_users', $row['assigned_to']) : NULL,
+      ));
+     }
+     return $new_arr;
+   }
+
+   public function get_all_byID($table, $id) 
+   { 
+      // $where = "id='$id' AND map_col_id is NOT NULL";
+     $this->db->select("*");
+     $this->db->from($table);
+     $this->db->where('id', $id);
+     $query = $this->db->get();
+     return $query->result()[0];
    }
   
    //exel outputfile data get by id 
@@ -309,7 +336,23 @@ class Admin_model extends CI_Model{
       return $query->result();
     }
 
-   
+    public function update_table($table,$field,$data) 
+    {
+      // $where = "id='Joe' AND status='boss' ";
+       $this->db->where('id',$data['id']);
+       return $this->db->update($table, array('assigned_to' => NULL)); 
+      
+       
+    }
+
+    public function update_table2($table,$data) 
+    {
+      // $where = "id='Joe' AND status='boss' ";
+       $this->db->where('id',$data['id']);
+       return $this->db->update($table, array('assigned_to' => $data['assigned_to'])); 
+      
+       
+    }
 
 
 }
