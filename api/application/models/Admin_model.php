@@ -62,7 +62,7 @@ class Admin_model extends CI_Model{
     }
 
    public function getCount($table){
-	return $this->db->count_all_results('tbl_output');
+	return $this->db->count_all_results($table);
    }
 
    public function getCountPms($table,$id){

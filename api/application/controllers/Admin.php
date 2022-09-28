@@ -18,57 +18,114 @@ class Admin extends CI_Controller{
 	public function ExlfileUpload()
 	{
     $_FILES = json_decode(file_get_contents('php://input'), true);
+    $user = $this->authUserToken([1]);
+    if($user){
     
-		$folderPath = "/assets";
-		$img = $_FILES['exc_file'];
-		$code = $_FILES['fileSource'];
-		$image_parts1 = explode(";base64", $code);
-		$image_base64 = base64_decode($image_parts1[1]);
-		$file_name = explode('\\',$img);
-		$file = $file_name[2];
-  
-		if(file_put_contents($file, $image_base64)){
-      // echo 'Inside if block';
-        $this->load->library('excel');
-        $objReader= PHPExcel_IOFactory::createReader('Excel2007');
-        $objReader->setReadDataOnly(true);     
-        $objPHPExcel=$objReader->load($file);
-        $totalrows=$objPHPExcel->setActiveSheetIndex(0)->getHighestRow();
-        $objWorksheet=$objPHPExcel->setActiveSheetIndex(0);
-        $arr2 = array();
+      $folderPath = "/assets";
+      $img = $_FILES['exc_file'];
+      $pms_id = $_FILES['pms_id'];
+      $code = $_FILES['fileSource'];
+      $image_parts1 = explode(";base64", $code);
+      $image_base64 = base64_decode($image_parts1[1]);
+      $file_name = explode('\\',$img);
+      $file = $file_name[2];
+    
+      if(file_put_contents($file, $image_base64)){
+        // echo 'Inside if block';
+          $this->load->library('excel');
+          $objReader= PHPExcel_IOFactory::createReader('Excel2007');
+          $objReader->setReadDataOnly(true);     
+          $objPHPExcel=$objReader->load($file);
+          $totalrows=$objPHPExcel->setActiveSheetIndex(0)->getHighestRow();
+          $objWorksheet=$objPHPExcel->setActiveSheetIndex(0);
+          $arr2 = array();
 
-        for($i=2; $i<$totalrows; $i++)
-        {   
-          $uid            = $objWorksheet->getCellByColumnAndRow(0,$i)->getValue();
-          $facility       = $objWorksheet->getCellByColumnAndRow(1,$i)->getValue();
-          $carrier_name   = $objWorksheet->getCellByColumnAndRow(2,$i)->getValue();
-          $voucher_number = $objWorksheet->getCellByColumnAndRow(3,$i)->getValue();    
-          $account_number = $objWorksheet->getCellByColumnAndRow(4,$i)->getValue();
-          $patient_name   = $objWorksheet->getCellByColumnAndRow(5,$i)->getValue();
-          $service_date   = $objWorksheet->getCellByColumnAndRow(6,$i)->getValue();   
-          $fees           = $objWorksheet->getCellByColumnAndRow(7,$i)->getValue();   
-          $balance        = $objWorksheet->getCellByColumnAndRow(8,$i)->getValue();   
-          date_default_timezone_set("America/New_York");
-          $created_date   = date('Y-m-d H:i:s', time());
+          for($i=2; $i<$totalrows; $i++)
+          {   
+            $uid            = $objWorksheet->getCellByColumnAndRow(0,$i)->getValue();
+            $facility       = $objWorksheet->getCellByColumnAndRow(1,$i)->getValue();
+            $carrier_name   = $objWorksheet->getCellByColumnAndRow(2,$i)->getValue();
+            $voucher_number = $objWorksheet->getCellByColumnAndRow(3,$i)->getValue();    
+            $account_number = $objWorksheet->getCellByColumnAndRow(4,$i)->getValue();
+            $patient_name   = $objWorksheet->getCellByColumnAndRow(5,$i)->getValue();
+            $service_date   = date("Y-m-d", strtotime($objWorksheet->getCellByColumnAndRow(6,$i)->getValue()));   
+            $billed_date   = date("Y-m-d", strtotime($objWorksheet->getCellByColumnAndRow(7,$i)->getValue()));   
+            $fees           = $objWorksheet->getCellByColumnAndRow(8,$i)->getValue();   
+            $balance        = $objWorksheet->getCellByColumnAndRow(9,$i)->getValue();   
+            date_default_timezone_set("America/New_York");
+            $created_date   = date('Y-m-d H:i:s', time());
 
-          $subscribers_data = array(
-            'UID'          =>$uid,
-            'Facility'     =>$facility,
-            'CarrierName'  => $carrier_name,
-            'VoucherNumber'=>$voucher_number,
-            'AccountNumber'=>$account_number,
-            'PatientName'  => $patient_name,
-            'ServiceDate'  =>$service_date,
-            'Fees'         =>$fees,
-            'Balance'      =>$balance,
-            'inserted_date'=> $created_date
-          );
-          $id = $this->Admin_model->insertFileData('tbl_output',$subscribers_data);
-          echo $id." ";
-        }
-      
+            $subscribers_data = array(
+              'UID'          =>$uid,
+              'Facility'     =>$facility,
+              'CarrierName'  => $carrier_name,
+              'VoucherNumber'=>$voucher_number,
+              'AccountNumber'=>$account_number,
+              'PatientName'  => $patient_name,
+              'ServiceDate'  =>$service_date,
+              'BilledDate'  =>$billed_date,
+              'Fees'         =>$fees,
+              'Balance'      =>$balance,
+              'inserted_date'=> $created_date,
+              'ATBDate'=>$created_date,
+              'AgingDays'=> $this->getDaysDiff($service_date),
+              'AgingBucket'=> $this->getBucket($this->getDaysDiff($service_date)) ,
+              'BilledDays' =>  $this->getDaysDiff($billed_date) ,
+              'BilledBucket' => $this->getBucket($this->getDaysDiff($billed_date)) ,
+              
+              'pms_id'=> $pms_id,
+              'Name'=>$user['id'],
+            );
+            $id = $this->Admin_model->insertFileData('tbl_output',$subscribers_data);
+            // echo date($service_date);
+            // echo date('Y-m-d H:i:s', $service_date);
+            // echo date(time() + $service_date);
+          }
+        
+      }
+
+      $arr = array(
+        'status' => 'success',
+        'message' => 'OK',
+      );
+      echo json_encode($arr);
+    }
+    else{
+      $arr = array(
+        'status' => 'error',
+        'message' => 'Modification not allowed',
+      );
+      echo json_encode($arr);
     }
   
+  }
+
+  private function getDaysDiff($date){
+    $now = time(); // or your date as well
+    $your_date = strtotime($date);
+    $datediff = $now - $your_date;
+
+    return round($datediff / (60 * 60 * 24));
+  }
+
+  private function getBucket($days){
+    if($days >= 0 && $days <= 30){
+      return '0-30';
+    }else if($days >= 31 && $days <= 60){
+      return '31-60';
+    }else if($days >= 61 && $days <= 90){
+      return '61-90';
+    }else if($days >= 91 && $days <= 120){
+      return '91-120';
+    }else if($days >= 121 && $days <= 180){
+      return '121-180';
+    }else if($days >= 181 && $days <= 365){
+      return '181-365';
+    }else if($days >= 365){
+      return '365+';
+    }else{
+      return NULL;
+    }
   }
  
   public function otputData($page, $row_limit)
@@ -352,11 +409,11 @@ class Admin extends CI_Controller{
   }
   
    // update clients data by id
-  public function updateClient($id)
+  public function updateClient()
 	{   
    
 	  $name = $this->input->post('name');
-	  // $id = $this->input->post('id');
+	  $id = $this->input->post('id');
     $pmsId = $this->input->post('pms_id');
 
     $dbimg = $this->Admin_model->outputfileGet('tbl_clients',$id);
@@ -480,11 +537,11 @@ class Admin extends CI_Controller{
     $map_count = $this->Admin_model->get_whereJ_SF('pms_system_cols', 'pms_id', $id, 'id, name as pms_col_name, map_col_id as output_col_id');
     // return $totalOutputCols;
     if(count($map_count) == 0){
-      return 'Not Mapped';
+      return 'not mapped';
     }else if(count($map_count) == $totalOutputCols){
-      return 'Mapped';
+      return 'mapped';
     }else{
-      return 'Partially Mapped';
+      return 'partially mapped';
     }
 
   }
@@ -826,7 +883,6 @@ class Admin extends CI_Controller{
       'mapping' => $data,
     );
     $arr = array(
-
       'status' => "success",
       'message' => 'Assigned Successfully',
       'data' => $data
@@ -876,7 +932,7 @@ class Admin extends CI_Controller{
 
     foreach ($data['mapValues'] as $val) {
       
-      array_push($arrs,array('name'=>$val['pms_col_name'],'map_col_id' => $val['output_col_id'], 'pms_id' => $id));
+      array_push($arrs,array('name'=>$val['pms_col_name'],'map_col_id' => $val['output_col_id'] == "0" ? NULL : $val['output_col_id'], 'pms_id' => $id));
 
     }
     $this->Admin_model->insert_data('pms_system_cols',$arrs);
@@ -897,7 +953,17 @@ class Admin extends CI_Controller{
     ));
   }
 
+  public function MatchPMS($id){
+    $data = $this->Admin_model->get_whereJ_SF('pms_system_cols', 'pms_id', $id, "*");
+    echo json_encode(array(
+      "status" => 'success',
+      "message" => 'OK',
+      'data' => $data,
+      'total_records' => count($data)
+    ));
+  }
 
+  
 }
 
 ?>
