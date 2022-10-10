@@ -43,7 +43,7 @@ class Admin extends CI_Controller{
           for($i=2; $i<$totalrows; $i++)
           {   
             $uid            = $objWorksheet->getCellByColumnAndRow(0,$i)->getValue();
-            $facility       = $objWorksheet->getCellByColumnAndRow(1,$i)->getValue();
+            $facility       = $this->Admin_model->get_clients_ByID('tbl_clients', 'name', $objWorksheet->getCellByColumnAndRow(1,$i)->getValue())['id'];
             $carrier_name   = $objWorksheet->getCellByColumnAndRow(2,$i)->getValue();
             $voucher_number = $objWorksheet->getCellByColumnAndRow(3,$i)->getValue();    
             $account_number = $objWorksheet->getCellByColumnAndRow(4,$i)->getValue();
@@ -100,6 +100,8 @@ class Admin extends CI_Controller{
     }
   
   }
+
+
 
   private function getDaysDiff($date){
     $now = time(); // or your date as well
@@ -180,7 +182,8 @@ class Admin extends CI_Controller{
   // get output file data by id
   public function getOutputFile($id)
 	{ 
-    $res = $this->Admin_model->outputfileGet('tbl_output',$id);
+    $ress = $this->Admin_model->outputfileGet('tbl_output',$id);
+    $res = $this->Admin_model->mgetOutputData2($ress);
 
     //print_r($query->result());    
 
@@ -209,16 +212,17 @@ class Admin extends CI_Controller{
     
     $data = json_decode(file_get_contents("php://input"));
   
-    if (isset($data->uid) && isset($data->facility) && isset($data->carrierName) && isset($data->voucherNumber) 
-       && isset($data->accountNumber) && isset($data->patientName)) {
+    if (isset($data->comments) && isset($data->statusName) && isset($data->subStatus) && isset($data->actionCode) 
+       && isset($data->accountType) && isset($data->followUpDate) && isset($data->workedDate)) {
        
        $data = array(
-        "UID"           => $data->uid,
-        "Facility"      => $data->facility,
-        "CarrierName"   => $data->carrierName,
-        "VoucherNumber" => $data->voucherNumber,
-        "AccountNumber" => $data->accountNumber,
-        "PatientName"   => $data->patientName
+        "Comments"           => $data->comments,
+        "StatusName"      => $data->statusName,
+        "SubStatus"   => $data->subStatus,
+        "ActionCode" => $data->actionCode,
+        "AccountType" => $data->accountType,
+        "FollowUpDate"   => date("Y-m-d", strtotime($data->followUpDate)),
+        "WorkedDate"   => date("Y-m-d", strtotime($data->workedDate)),
        );
         // echo json_encode($data);
         
@@ -380,23 +384,61 @@ class Admin extends CI_Controller{
   }
   
   //get all client
-  public function clients()
+  public function clients($page, $row_limit)
 	{ 
-    $data_arr = $this->Admin_model->get_clients_temp('tbl_clients');
-      // print_r($data_arr);
-    if ($data_arr) {
+    $user = $this->authUserToken([1]);
+    if($user){
+      $data_arr = $this->Admin_model->get_clients_temp('tbl_clients');
+  
+      $first_page= false;
+        $last_page = false;
+
+        $total_records = count($data_arr);
+
+      
+        $total_pages = ceil($total_records/$row_limit);
+
+        // // handle errors
+        if ($page > $total_pages || $page < 1){
+          $arr = array(
+            'status' => 'error',
+            'message' => 'Invalid page number.',
+          );
+          echo json_encode($arr);
+        }
+
+        else{
+
+          $skip = 0;
+          if($page > 1){
+            $first_page = false;
+            $skip = $row_limit* ($page - 1);
+          }
+          else{
+            $first_page = true;
+          }
+          if($total_pages == $page){
+            $last_page = true;
+          }
+          $data_arr = $this->Admin_model->get_clients_temp1('tbl_clients', $skip, $row_limit);
+          $arr = array(
+            'status' => 'success',
+            'first_page' => $first_page,
+            'last_page' => $last_page,
+            'total_pages' =>  $total_pages,
+            'current_page' => $page,
+            'total_records' => $total_records,
+            'data'=> $data_arr,
+          );
+          echo json_encode($arr);
+        }
+      
+    }else{
       $arr = array(
-        'status' => 'success',
-        'data'=> $data_arr
-      );
-      echo json_encode($arr);
-    }
-    else{
-      $arr = array(
-        'status' => 'error',
-        'message'=> 'error'
-      );
-      echo json_encode($arr);
+        'status' => "error",
+        'message' => 'Login failed'
+       );
+       echo json_encode($arr);
     }
       
   }
@@ -550,36 +592,85 @@ class Admin extends CI_Controller{
   }
 
   //get all pms
-  public function GetPMS()
+  public function GetPMS($page,$row_limit)
   { 
-    $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
-
-    $data = array();
-
-    
-    foreach ($data_arr as $map) { 
-      array_push($data,  array(      
-        "id"=> $map->id,
-        "image"=> $map->image,
-        "name"=> $map->name,
-        "created_date"=> $map->created_date,
-        "clients"=> $this->Admin_model->get_where_temp('tbl_clients', 'pms_id', $map->id),
-        "cols" => $this->Admin_model->get_where_SF('pms_system_cols', 'pms_id', $map->id, 'id, name as pms_col_name, map_col_id as output_col_id'),
-        "mapping_status" => $this->mappingStatus($map->id)
-      ));
-    }
-      // print_r($data_arr);
-    if ($data_arr) {
+    $user = $this->authUserToken([1,2]);
+    if($user['role'] == 2){
+      $SQL = "SELECT distinct pms.* FROM `manager_agent` m_a INNER JOIN tbl_clients as client ON client.id = m_a.client INNER JOIN tbl_pms as pms ON pms.id = client.pms_id where m_a.manager = ".$user['id'];
+      $query = $this->db->query($SQL);
       $arr = array(
         'status' => 'success',
-        'data'=> $data
+        'message' => "OK",
+        'data'=> $query->result_array()
       );
       echo json_encode($arr);
+    }
+    else if($user['role'] == 1){
+      $first_page= false;
+      $last_page = false;
+      $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
+      $total_records = count($data_arr);
+      $total_pages = ceil($total_records/$row_limit);
+      
+      $data = array();
+      if ($page > $total_pages || $page < 1){
+        $arr = array(
+          'status' => 'error',
+          'message' => 'Invalid page number.',
+        );
+        echo json_encode($arr);
+      }
+      else{
+        $skip = 0;
+        if($page > 1){
+          $first_page = false;
+          $skip = $row_limit* ($page - 1);
+        }
+        else{
+          $first_page = true;
+        }
+        if($total_pages == $page){
+          $last_page = true;
+        }
+        $data_arr = $this->Admin_model->get_clients_pms_temp1('tbl_pms', $skip, $row_limit);
+        foreach ($data_arr as $map) { 
+          array_push($data,  array(      
+            "id"=> $map->id,
+            "image"=> $map->image,
+            "name"=> $map->name,
+            "created_date"=> $map->created_date,
+            "clients"=> $this->Admin_model->get_where_temp('tbl_clients', 'pms_id', $map->id),
+            "cols" => $this->Admin_model->get_where_SF('pms_system_cols', 'pms_id', $map->id, 'id, name as pms_col_name, map_col_id as output_col_id'),
+            "mapping_status" => $this->mappingStatus($map->id)
+          ));
+        }
+          // print_r($data_arr);
+        if ($data_arr) {
+          $arr = array(
+            'status' => 'success',
+            'first_page' => $first_page,
+            'last_page' => $last_page,
+            'total_pages' =>  $total_pages,
+            'current_page' => $page,
+            'total_records' => $total_records,
+            'data'=> $data
+          );
+          echo json_encode($arr);
+        }
+        else{
+          $arr = array(
+            'status' => 'error',
+            'message'=> 'error'
+          );
+          echo json_encode($arr);
+        }
+      }
+      
     }
     else{
       $arr = array(
         'status' => 'error',
-        'message'=> 'error'
+        'message'=> 'unauthenticated'
       );
       echo json_encode($arr);
     }
@@ -688,6 +779,31 @@ class Admin extends CI_Controller{
      echo json_encode($arr);
   }
 
+  public function GetManagerAgent2(){
+    $user = $this->authUserToken([2]);
+    if($user){
+      $agents = $this->Admin_model->get_data2('manager_agent', 'manager', $user['id']);
+  
+      $data = array(
+        'agents' => $agents
+      );
+  
+      $arr = array(
+        'status' => "success",
+        'message' => 'OK',
+        'data' => $data,
+       );
+       echo json_encode($arr);
+    }
+    else{
+      $arr = array(
+        'status' => "error",
+        'message' => 'Manager not found',
+       );
+       echo json_encode($arr);
+    }
+  }
+
 
   public function AssignManagerAgent(){
     $_POST = json_decode(file_get_contents('php://input'), true);
@@ -704,6 +820,41 @@ class Admin extends CI_Controller{
     $arr = array(
       'status' => "success",
       'message' => 'Assigned Successfully',
+     );
+     echo json_encode($arr);
+  }
+
+  public function AssignAgentClient(){
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $user = $this->authUserToken([2]);
+    $data = $this->input->post();
+    $arrs = array();
+    foreach ($data['clients'] as $client) {
+      array_push($arrs,array('manager_id'=> $user['id'], 'agent_id' => $data['agent'], 'client_id' => $client));
+    }
+    $this->Admin_model->insert_data('agent_client',$arrs);
+
+    // assign in tbl_output need to comment 
+    // commented code for 1 to many
+    // $pms_ids = array();
+
+    // foreach ($data['clients'] as $client) {
+    //   array_push($pms_ids, $this->Admin_model->get_clients_ByID('tbl_clients', 'id', $client)['pms_id']);
+    // }
+    // $clients_arr = implode(', ', $data['clients']);
+    // $pms_arr = implode(', ', $pms_ids);
+    // // $where = $this->Admin_model->update_tbl_output('tbl_output', 'Facility', $data['clients'], $data['agent'], $pms_ids) ;
+    // // $SQL = "UPDATE `tbl_output` SET `assigned_to` = ".$data['agent']." WHERE `Facility` IN (".implode(', ', $data['clients']).") AND `pms_id` IN (".implode(', ', $pms_ids).")";
+    // $SQL = "UPDATE `tbl_output` SET `assigned_to` = '".$data['agent']."' WHERE `Facility` IN ('". $clients_arr ."') AND `pms_id` IN ('". $pms_arr ."')";
+    // $query = $this->db->query($SQL);
+
+    // $arr = array(
+    //   'status' => "success",
+    //   'message' => $SQL,
+    //  );
+    $arr = array(
+      'status' => "success",
+      'message' => "Assigned Successfully",
      );
      echo json_encode($arr);
   }
@@ -730,14 +881,54 @@ class Admin extends CI_Controller{
   public function GetAssignClaimsAgent($page, $row_limit){
     $user = $this->authUserToken([3]);
     if($user){
-      $data = $this->Admin_model->get_where('tbl_output','assigned_to', $user['id']);
+      $data_arr = $this->Admin_model->get_where_new('tbl_output','assigned_to', $user['id']);
   
-      $arr = array(
-        'status' => "success",
-        'message' => 'OK',
-        'data' => $data
-       );
-       echo json_encode($arr);
+      $first_page= false;
+        $last_page = false;
+
+        $total_records = count($data_arr);
+
+      
+        $total_pages = ceil($total_records/$row_limit);
+
+        // // handle errors
+        if ($page > $total_pages || $page < 1){
+          $arr = array(
+            'status' => 'error',
+            'message' => 'Invalid page number.',
+          );
+          echo json_encode($arr);
+        }
+
+        else{
+
+          $skip = 0;
+          if($page > 1){
+            $first_page = false;
+            $skip = $row_limit* ($page - 1);
+          }
+          else{
+            $first_page = true;
+          }
+          if($total_pages == $page){
+            $last_page = true;
+          }
+          $data_arr = $this->Admin_model->getOutputDataWhere($skip, $row_limit, 'assigned_to', $user['id']);
+
+          $mDataArr = $this->Admin_model->mgetOutputData($data_arr);
+
+          $arr = array(
+            'status' => 'success',
+            'first_page' => $first_page,
+            'last_page' => $last_page,
+            'total_pages' =>  $total_pages,
+            'current_page' => $page,
+            'total_records' => $total_records,
+            'data'=> $mDataArr,
+          );
+          echo json_encode($arr);
+        }
+      
     }else{
       $arr = array(
         'status' => "error",
@@ -750,7 +941,15 @@ class Admin extends CI_Controller{
   public function GetManagerAgentMapping(){
     $user = $this->authUserToken([2]);
     if($user){
-      $data = $this->Admin_model->get_where2('manager_agent','manager', $user['id']);
+      $SQL = "SELECT distinct pms.* FROM `manager_agent` m_a INNER JOIN tbl_clients as client ON client.id = m_a.client INNER JOIN tbl_pms as pms ON pms.id = client.pms_id where m_a.manager = ".$user['id'];
+      $query = $this->db->query($SQL);
+      // $query->result_array();
+
+      $data = array(
+        "agents" => $this->Admin_model->get_where2('manager_agent','manager', $user['id']),
+        "clients" => $this->Admin_model->get_where3('manager_agent','manager', $user['id']),
+        "pms" => $query->result_array()
+      );
   
       $arr = array(
         'status' => "success",
@@ -864,8 +1063,10 @@ class Admin extends CI_Controller{
 
   public function MATempMap(){
     $managers = $this->Admin_model->get_data('tbl_users', 2);
-    $agents = $this->Admin_model->get_data('tbl_users', 3);
-    $clients = $this->Admin_model->get_all_data('tbl_clients');
+    // $agents = $this->Admin_model->get_data('tbl_users', 3);
+    // $clients = $this->Admin_model->get_all_data('tbl_clients');
+    $agents = $this->Admin_model->get_all_unassign_data('tbl_users', 'agent');
+    $clients = $this->Admin_model->get_all_unassign_data('tbl_clients', 'client');
     $data_arr =  $this->Admin_model->get_where_temp('tbl_users', 'role', '2');
  
     // 
@@ -983,6 +1184,170 @@ class Admin extends CI_Controller{
   }
 
   
-}
+  public function DelAgentClient(){
+    $user = $this->authUserToken([2]);
+    $_POST = json_decode(file_get_contents('php://input'), true);
+    $data = $this->input->post();
+    
+    $manager_id = $user['id'];
+    $client_id = $data['client_id'];
+    $agent_id = $data['agent_id'];
+    
+    $data = array(
+      "agent_id" => $agent_id,
+      "client_id" => $client_id,
+      "manager_id" =>$manager_id
+    );
+    $result =  $this->Admin_model->delete_where2('agent_client', 'agent_id', $data);
+
+    $client_pms = $this->Admin_model->get_clients_ByID('tbl_clients', 'id', $client_id)['pms_id'];
+    // need to removed
+    $this->Admin_model->del_tbl_output('tbl_output', 'Facility', $client_id, $agent_id, $client_pms);
+    
+    
+    echo json_encode($result);
+  }
+
+  public function GetAgentClient(){
+    $user = $this->authUserToken([2]);
+    $agents = $this->Admin_model->get_where_not_null('manager_agent', 'manager', $user['id'], 'agent');
+    $clients = $this->Admin_model->get_where_not_null('manager_agent', 'manager', $user['id'], 'client');
+   
+    //    uncomment for 1 to many 
+    // $SQL1 = "SELECT * FROM tbl_clients WHERE id NOT IN ( SELECT client.client_id FROM `manager_agent` m_a INNER JOIN agent_client as client ON client.manager_id = m_a.manager WHERE m_a.manager = 15 AND m_a.client IS NOT NULL)";
+    // $SQL1 ="SELECT * FROM tbl_clients WHERE id IN ( SELECT m_a.client FROM `manager_agent` m_a WHERE m_a.manager = 15 AND m_a.client IS NOT NULL) AND id NOT IN ( SELECT client.client_id FROM `manager_agent` m_a INNER JOIN agent_client as client ON client.manager_id = m_a.manager WHERE m_a.manager = 15 AND m_a.client IS NOT NULL)";
+    // $query1 = $this->db->query($SQL1);
+    // $clients = $query1->result_array();
+
+    $data_arr = array();
+
+    foreach ($agents as $map) { 
+      array_push($data_arr,  array(
+        "id"=> $map->id,
+        "agent_name"=> $map->agent_name,
+        "agent_id" => $map->agent,
+        "clients"=> $this->Admin_model->get_where_temp_client2('agent_client', 'manager_id', $map)
+      ));
+    }
+    
+    $data = array(
+      'agents' => $agents,
+      'clients' => $clients,
+      'mapping' => $data_arr
+    );
+    $arr = array(
+      'status' => "success",
+      'message' => 'OK',
+      'data' => $data
+     );
+     echo json_encode($arr);
+  }
+
+  // public function GetAgentClient(){
+  //   $user = $this->authUserToken([2]);
+  //   $agents = $this->Admin_model->get_where_not_null('manager_agent', 'manager', $user['id'], 'agent');
+  //   $clients = $this->Admin_model->get_where_not_null('manager_agent', 'manager', $user['id'], 'client');
+  //   $data_arr =  $this->Admin_model->get_where_temp('tbl_users', 'role', '2');
+ 
+  //   // 
+  //   // $data_arr = $this->Admin_model->get_clients_pms_temp('tbl_pms');
+  //     $data = array();
+
+  //     foreach ($data_arr as $map) { 
+  //       array_push($data,  array(
+  //         "id"=> $map->id,
+  //         "name"=> $map->name,
+  //         "agent"=> $this->Admin_model->get_where_temp_agent('manager_agent', 'manager', $map),
+  //         "client"=> $this->Admin_model->get_where_temp_client('manager_agent', 'manager', $map)
+  //       ));
+  //     }
+  //   // 
+    
+  //   $data = array(
+  //     'agents' => $agents,
+  //     'clients' => $clients,
+  //     'mapping' => $data,
+  //   );
+  //   $arr = array(
+  //     'status' => "success",
+  //     'message' => 'OK',
+  //     'data' => $data
+  //    );
+  //    echo json_encode($arr);
+  // }
+
+
+
+
+  public function outputDataManager($page, $row_limit)
+    { 
+      $user = $this->authUserToken([2]);
+      if($user['role'] == 2){
+        $SQL = "SELECT distinct pms.* FROM `manager_agent` m_a INNER JOIN tbl_clients as client ON client.id = m_a.client INNER JOIN tbl_pms as pms ON pms.id = client.pms_id where m_a.manager = ".$user['id'];
+        $query = $this->db->query($SQL);
+        $pms_ids = [];
+
+        foreach ( $query->result_array() as $pms) {
+          array_push($pms_ids, $pms['id']);
+        }
+
+        $first_page= false;
+        $last_page = false;
+
+        $total_records = count($this->Admin_model->getCountWhereIn('tbl_output', 'pms_id', $pms_ids));
+
+      
+        $total_pages = ceil($total_records/$row_limit);
+
+        // // handle errors
+        if ($page > $total_pages || $page < 1){
+          $arr = array(
+            'status' => 'error',
+            'message' => 'Invalid page number.',
+          );
+          echo json_encode($arr);
+        }
+
+        else{
+
+          $skip = 0;
+          if($page > 1){
+            $first_page = false;
+            $skip = $row_limit* ($page - 1);
+          }
+          else{
+            $first_page = true;
+          }
+          if($total_pages == $page){
+            $last_page = true;
+          }
+          $data_arr = $this->Admin_model->getOutputDataWhere($skip, $row_limit, 'pms_id', $pms_ids);
+
+          $mDataArr = $this->Admin_model->mgetOutputData($data_arr);
+
+          $arr = array(
+            'status' => 'success',
+            'first_page' => $first_page,
+            'last_page' => $last_page,
+            'total_pages' =>  $total_pages,
+            'current_page' => $page,
+            'total_records' => $total_records,
+            'data'=> $mDataArr,
+          );
+          echo json_encode($arr);
+        }
+      }
+      else{
+        $arr = array(
+          'status' => 'error',
+          'message' => 'Un authenticated',
+        );
+        echo json_encode($arr);
+      }
+    }
+
+  }
 
 ?>
+
+

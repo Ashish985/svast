@@ -136,9 +136,9 @@ class Users extends CI_Controller
         $mobile = $this->security->xss_clean($this->input->post("mobile"));
         $username = $this->security->xss_clean($this->input->post("username"));
         $role = $this->security->xss_clean($this->input->post("role"));
-        $status = $this->security->xss_clean($this->input->post("status"));
-        $password = $this->security->xss_clean($this->input->post("password"));
-        $cpassword = $this->security->xss_clean($this->input->post("cpassword"));
+        // $status = $this->security->xss_clean($this->input->post("status"));
+        // $password = $this->security->xss_clean($this->input->post("password"));
+        // $cpassword = $this->security->xss_clean($this->input->post("cpassword"));
 
         // form validation for inputs
         $this->form_validation->set_rules("name", "Name", "required");
@@ -146,9 +146,9 @@ class Users extends CI_Controller
         $this->form_validation->set_rules("mobile", "Mobile", "required");
         $this->form_validation->set_rules("username", "Username", "required");
         $this->form_validation->set_rules("role", "Role", "required");
-        $this->form_validation->set_rules("status", "Status", "required");
-        $this->form_validation->set_rules("password", "password", "required");
-        $this->form_validation->set_rules("cpassword", "cpassword", "required|matches[cpassword]");
+        // $this->form_validation->set_rules("status", "Status", "required");
+        // $this->form_validation->set_rules("password", "password", "required");
+        // $this->form_validation->set_rules("cpassword", "cpassword", "required|matches[cpassword]");
 
         // checking form submittion have any error or not
         if ($this->form_validation->run() === false) {
@@ -161,9 +161,9 @@ class Users extends CI_Controller
             echo json_encode($arr);
         } else {
 
-            if (!empty($name) && !empty($email) && !empty($mobile) && !empty($username) && !empty($role) && !empty($status) && !empty($password)) {
+            if (!empty($name) && !empty($email) && !empty($mobile) && !empty($username) && !empty($role) ) {
                 // all values are available
-                $password = password_hash($password, PASSWORD_BCRYPT);
+                // $password = password_hash($password, PASSWORD_BCRYPT);
                 date_default_timezone_set('Asia/Kolkata');
                 $created_date = date('Y-m-d H:i:s', time());
              
@@ -173,9 +173,9 @@ class Users extends CI_Controller
                     "mobile" => $mobile,
                     "username" => $username,
                     "role" => $role,
-                    "status" => $status,
-                    "password" => $password,
-                    "created_at" => $created_date,
+                    "status" => 1,
+                    // "password" => $password,
+                    // "created_at" => $created_date,
                 );
 
                 // echo json_encode($user);
@@ -360,7 +360,7 @@ class Users extends CI_Controller
         //echo "This is PUT Method";
         $data = json_decode(file_get_contents("php://input"));
 
-        if (isset($id) && isset($data->name) && isset($data->email) && isset($data->mobile) && isset($data->username)) {
+        if (isset($id) && isset($data->name) && isset($data->email) && isset($data->mobile) && isset($data->username)  && isset($data->role)) {
             date_default_timezone_set('Asia/Kolkata');
             $updated_date = date('Y-m-d H:i:s', time());
 
@@ -370,7 +370,8 @@ class Users extends CI_Controller
                 "email" => $data->email,
                 "mobile" => $data->mobile,
                 "username" => $data->username,
-                "updated_date" => $updated_date
+                "updated_date" => $updated_date,
+                "role" => $data->role
             );
             // echo json_encode($user_info);
             if ($this->Users_model->update('tbl_users', $user_id, $user_info)) {
